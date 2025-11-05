@@ -1,21 +1,24 @@
-import javax.swing.*;
-
 public class Main {
     public static void main(String[] args) {
-        int width = 800;
-        int height = 600;
+        // Ensure Swing UI is created on the Event Dispatch Thread
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            int width = 800;
+            int height = 600;
 
-        JFrame frame = new JFrame("Arkanoid");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
+            javax.swing.JFrame frame = new javax.swing.JFrame("Arkanoid");
+            frame.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
+            frame.setResizable(false);
 
-        GamePanel gamePanel = new GamePanel(width, height);
-        frame.add(gamePanel);
+            GamePanel gamePanel = new GamePanel(width, height);
+            frame.add(gamePanel);
 
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
 
-        frame.setVisible(true);
-        gamePanel.requestFocusInWindow();
+            frame.setVisible(true);
+
+            // Request focus so key events go to the panel
+            gamePanel.requestFocusInWindow();
+        });
     }
 }

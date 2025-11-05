@@ -1,10 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+/**
+ * GamePanel: UI layer, handles input, ticking and rendering.
+ * Adjusted to match updated APIs (camelCase method names, updated brick types).
+ */
 public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private GameEngine gameEngine;
     private Renderer renderer;
@@ -33,13 +36,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        // Render paddle and ball
         renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
         renderer.render(g, gameEngine.getBall(), Color.RED);
-        for (Brick brick : gameEngine.getBricks()) {
+
+        // Render bricks (only those not destroyed)
+        for (var brick : gameEngine.getBricks()) {
             if (!brick.isDestroyed()) {
                 Color brickColor;
                 if (brick instanceof StrongBrick) {
-                    int hp = brick.getHitPoint();
+                    int hp = brick.getHitPoints();
                     if (hp >= 3) {
                         brickColor = new Color(139, 0, 0);
                     } else if (hp == 2) {
@@ -48,11 +54,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                         brickColor = new Color(205, 92, 92);
                     }
                 } else {
-                    brickColor = Color.green;
+                    brickColor = Color.GREEN;
                 }
                 renderer.render(g, brick, brickColor);
             }
         }
+
         renderUI(g);
     }
 
@@ -66,50 +73,41 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         int lineHeight = 50;
         if (gameEngine.isPaused()) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
-            String Paused = "Paused";
-            int textWidth = g.getFontMetrics().stringWidth(Paused);
-            g.drawString(Paused
-                    , (getWidth() - textWidth) / 2
-                    , getHeight() / 2);
+            String pausedText = "Paused";
+            int textWidth = g.getFontMetrics().stringWidth(pausedText);
+            g.drawString(pausedText, (getWidth() - textWidth) / 2, getHeight() / 2);
         } else if (gameEngine.isGameOver()) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
-            String GameOver = "Game Over";
-            int textWidth = g.getFontMetrics().stringWidth(GameOver);
-            g.drawString(GameOver
-                    , (getWidth() - textWidth) / 2
-                    , getHeight() / 2);
+            String gameOver = "Game Over";
+            int textWidth = g.getFontMetrics().stringWidth(gameOver);
+            g.drawString(gameOver, (getWidth() - textWidth) / 2, getHeight() / 2);
 
             String restartGame = "Press R to restart";
             int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
-            g.drawString(restartGame
-                    , (getWidth() - textWidth2) / 2
-                    , getHeight() / 2 + lineHeight);
+            g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
         } else if (gameEngine.isGameWon()) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
-            String GameWon = "Game Won";
-            int textWidth = g.getFontMetrics().stringWidth(GameWon);
-            g.drawString(GameWon
-                    , (getWidth() - textWidth) / 2,
-                    (getHeight() - textWidth) / 2);
+            String gameWon = "Game Won";
+            int textWidth = g.getFontMetrics().stringWidth(gameWon);
+            g.drawString(gameWon, (getWidth() - textWidth) / 2, getHeight() / 2);
 
             String restartGame = "Press R to restart";
             int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
-            g.drawString(restartGame
-                    , (getWidth() - textWidth2) / 2
-                    , getHeight() / 2 + lineHeight);
+            g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
         }
     }
 
     @Override
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(java.awt.event.ActionEvent e) {
         if (pressedLeft && !pressedRight) {
-            gameEngine.getPaddle().MoveLeft();
+            gameEngine.getPaddle().moveLeft();
         } else if (pressedRight && !pressedLeft) {
-            gameEngine.getPaddle().MoveRight();
+            gameEngine.getPaddle().moveRight();
         } else {
-            gameEngine.getPaddle().Stop();
+            gameEngine.getPaddle().stop();
         }
-        gameEngine.update();
+        // Pass deltaTime as a fixed timestep (1/60s) to engine update for consistency.
+        gameEngine.update(1.0 / 60.0);
         repaint();
     }
 
@@ -123,11 +121,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             pressedRight = true;
         }
         if (key == KeyEvent.VK_P) {
-            gameEngine.TogglePaused();
+            gameEngine.togglePaused();
         }
         if (key == KeyEvent.VK_R) {
-            if (gameEngine.isGameOver()|| gameEngine.isGameWon()) {
-                gameEngine.Restart();
+            if (gameEngine.isGameOver() || gameEngine.isGameWon()) {
+                gameEngine.restart();
             }
         }
     }

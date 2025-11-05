@@ -1,8 +1,11 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class MovableObject extends GameObject {
     protected double velX;
     protected double velY;
 
-    public MovableObject(double posX, double posY, int width, int height, double velX, double velY) {
+    public MovableObject(double posX, double posY, double width, double height, double velX, double velY) {
         super(posX, posY, width, height);
         this.velX = velX;
         this.velY = velY;
@@ -42,15 +45,14 @@ public abstract class MovableObject extends GameObject {
         this.velY = -velY;
     }
 
-    public void move() {
-        this.posX += velX;
-        this.posY += velY;
+    public void move(double deltaTime) {
+        this.posX += velX * deltaTime;
+        this.posY += velY * deltaTime;
     }
 
     @Override
-    public void update() {
-        move();
+    public void update(double deltaTime, ArrayList<GameObject> objects) {
+        move(deltaTime);
     }
-
 
 }
