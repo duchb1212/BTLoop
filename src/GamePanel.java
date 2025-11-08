@@ -59,6 +59,18 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 renderer.render(g, brick, brickColor);
             }
         }
+        for (var powerball : gameEngine.getPowerUps()) {
+            Color powerballColor;
+            PowerUpBall powerBall =  (PowerUpBall) powerball;
+            if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Fire_Ball)) {
+                powerballColor = new Color(255, 60, 60);
+            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Enlarged_Ball)) {
+                powerballColor = new Color(255, 255, 255);
+            } else  {
+                powerballColor = new  Color(255, 0, 255);
+            }
+            renderer.render(g, powerball, powerballColor);
+        }
 
         renderUI(g);
     }
@@ -114,6 +126,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
+        if (key == KeyEvent.VK_SPACE) {
+            if (!gameEngine.getBall().isLaunched()) {
+                // initial launch direction: slightly to the right and upward
+                gameEngine.getBall().launch(0.2, -1.0);
+            }
+        }
         if (key == KeyEvent.VK_LEFT) {
             pressedLeft = true;
         }

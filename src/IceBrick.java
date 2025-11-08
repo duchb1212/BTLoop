@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class NormalBrick extends Brick {
+public class IceBrick extends Brick {
     /**
      * Create a NormalBrick with given position, size and hit points.
      *
@@ -10,7 +10,7 @@ public class NormalBrick extends Brick {
      * @param height brick height
      * @param hitPoints initial hit points (>= 0)
      */
-    public NormalBrick(double posX, double posY, double width, double height, int screenWidth, int screenHeight, int hitPoints) {
+    public IceBrick(double posX, double posY, double width, double height, int screenWidth, int screenHeight, int hitPoints) {
         super(posX, posY, width, height, screenWidth, screenHeight, hitPoints);
     }
 

@@ -114,8 +114,5 @@ public abstract class GameObject {
         return posY + height * 0.5;
     }
 
-    @Override
-    public String toString() {
-        return String.format("GameObject[pos=(%.3f,%.3f), size=(%.3f,%.3f)]", posX, posY, width, height);
-    }
+
 }

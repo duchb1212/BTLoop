@@ -1,11 +1,12 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * GameEngine orchestrates game objects and high-level game state.
  * <p>
  * Notes on compatibility with the rest of your codebase:
  * - Uses ArrayList<GameObject> everywhere to match existing signatures.
- * - Bricks are instances of BrickFactory (NormalBrick, StrongBrick, UnbreakableBrick).
+ * - Bricks are instances of Brick (NormalBrick, StrongBrick, UnbreakableBrick).
  * - Ball.update(...) performs swept-AABB based movement; GameEngine still
  * manages scoring, lives, and simple discrete collision responses for bricks/paddle
  * (since Ball does not currently apply game logic like scoring or destroying bricks).
@@ -13,7 +14,8 @@ import java.util.ArrayList;
 public class GameEngine {
     private Paddle paddle;
     private Ball ball;
-    private ArrayList<BrickFactory> bricks;
+    private ArrayList<Brick> bricks;
+    private ArrayList<GameObject> powerUps;
 
     private int score;
     private int lives;
@@ -27,11 +29,13 @@ public class GameEngine {
     private static final int initialLives = 3;
     private static final int pointNormalBricks = 10;
     private static final int pointStrongBricks = 20;
+    private static final double EPS = 1e-3;
 
     public GameEngine(int screenWidth, int screenHeight) {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.bricks = new ArrayList<>();
+        this.powerUps = new ArrayList<>();
         initGame();
     }
 
@@ -52,12 +56,20 @@ public class GameEngine {
         this.ball = ball;
     }
 
-    public ArrayList<BrickFactory> getBricks() {
+    public ArrayList<Brick> getBricks() {
         return bricks;
     }
 
-    public void setBricks(ArrayList<BrickFactory> bricks) {
+    public void setBricks(ArrayList<Brick> bricks) {
         this.bricks = bricks;
+    }
+
+    public ArrayList<GameObject> getPowerUps() {
+        return powerUps;
+    }
+
+    public void setPowerUps(ArrayList<GameObject> powerUps) {
+        this.powerUps = powerUps;
     }
 
     public int getScore() {
@@ -147,6 +159,7 @@ public class GameEngine {
         paused = false;
 
         createBricks();
+        powerUps.clear();
     }
 
     private void createBricks() {
@@ -165,12 +178,15 @@ public class GameEngine {
             for (int j = 0; j < cols; j++) {
                 int x = offSetX + j * (brickWidth + brickPadding);
                 int y = offSetY + i * (brickHeight + brickPadding);
+
                 if (i == 0 || i == 1) {
                     // Strong brick typically with 3 HP
-                    bricks.add(new StrongBrick(x, y, brickWidth, brickHeight, 3));
+                    BrickFactory factory = new StrongBrickFactory();
+                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
                 } else {
                     // Normal brick typically with 1 HP
-                    bricks.add(new NormalBrick(x, y, brickWidth, brickHeight, 1));
+                    BrickFactory factory = new NormalBrickFactory();
+                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
                 }
             }
         }
@@ -187,28 +203,63 @@ public class GameEngine {
         // Build the list of all objects for collision queries (Ball expects ArrayList<GameObject>)
         ArrayList<GameObject> allObjects = new ArrayList<>();
 
-        // Add paddle and all bricks (bricks are BrickFactory which extends GameObject)
+        // Add paddle and all bricks (bricks are Brick which extends GameObject)
         allObjects.add(paddle);
         allObjects.addAll(bricks);
-
+        allObjects.addAll(powerUps);
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, allObjects);
 
         // Update ball using swept-AABB movement against allObjects
-        ball.update(deltaTime, allObjects);
+        if (!ball.isLaunched()) {
+            // Ball is attached to paddle: snap it to paddle top and don't run full physics
+            double ballX = paddle.getPosX() + (paddle.getWidth() - ball.getWidth()) / 2.0;
+            double ballY = paddle.getPosY() - ball.getHeight();
+            ball.setPosX(ballX);
+            ball.setPosY(ballY);
+            ball.setVelX(0.0);
+            ball.setVelY(0.0);
+        } else {
+            // Ball in-flight: update physics with swept-AABB
+            ball.update(deltaTime, allObjects);
+        }
+        for (Iterator<GameObject> it = powerUps.iterator(); it.hasNext(); ) {
+            GameObject obj = it.next();
+            // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
+            if (obj instanceof PowerUpBall pup) {
+                pup.update(deltaTime, allObjects);
+
+                // If collected by paddle
+                if (paddle.intersects(pup)) {
+                    // apply effect
+                    ball.getPowerUps().put(pup.getPowerUpType(), 5.00000);
+                    // mark / remove
+                    it.remove();
+                    continue;
+                }
+
+                // If flagged for removal (e.g. fell below screen)
+                if (pup.isMarkedForRemoval()) {
+                    it.remove();
+                }
+            } else {
+                // If other dynamic objects, you can update them here
+            }
+        }
         CollisionResult c = ball.lastCollision;
-        if (c != null && c.targetObject instanceof BrickFactory) {
-            BrickFactory brick = (BrickFactory) c.targetObject;
+        if (c != null && c.targetObject instanceof Brick) {
+            Brick brick = (Brick) c.targetObject;
             if (brick.isDestroyed()) {
                 if (brick instanceof NormalBrick) score += pointNormalBricks;
                 else if (brick instanceof StrongBrick) score += pointStrongBricks;
+                GameObject spawn = brick.onDestroyed();
+                if (spawn != null) {
+                    powerUps.add(spawn);
+                }
             }
             // Clear to avoid double processing
             ball.lastCollision = null;
         }
-
-        // After ball movement we check:
-        // 1) bottom of screen -> lose life
         if (ball.checkWallCollision()) {
             lives--;
             if (lives <= 0) {
@@ -217,49 +268,62 @@ public class GameEngine {
                 resetBall();
             }
         }
-
-        // 2) Discrete intersection checks to apply game effects:
-        //    - If ball intersects a brick that is not destroyed -> apply damage and score
-        //    - If ball intersects paddle -> bounce (simple discrete fallback)
-        // Note: Ball.update already tries to handle continuous collisions; these checks are
-        //       a simple fallback to ensure bricks get damaged and score updated.
-        // Build minimal list of game objects to check (only alive bricks + paddle)
-        // Paddle check:
+        // DISCRETE FALLBACK: paddle collision handling
+        // DISCRETE FALLBACK: paddle collision handling (refactored, drop unused vars & fix small-bug)
         if (ball.intersects(paddle)) {
+            if (ball.isLaunched()) {
+                // compute overlap extents (only need overlap values)
+                double overlapX = Math.max(0.0, Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())
+                        - Math.max(ball.getPosX(), paddle.getPosX()));
+                double overlapY = Math.max(0.0, Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())
+                        - Math.max(ball.getPosY(), paddle.getPosY()));
 
-            // Simple bounce: reverse Y velocity and optionally tweak X based on hit position
-            // Compute relative hit position (-1..1)
-            double hitPos = ((ball.centerX()) - (paddle.centerX())) / (paddle.getWidth() * 0.5);
+                final double PUSH_OUT = 0.5;
 
-            // Clamp
-            if (hitPos < -1.0) hitPos = -1.0;
-            if (hitPos > 1.0) hitPos = 1.0;
-
-            // Angle effect: adjust velX proportional to hitPos
-            double newDirX = hitPos;
-
-            // Ensure not zero to avoid purely vertical bounce
-            if (Math.abs(newDirX) < 0.1) newDirX = Math.signum(newDirX) * 0.1;
-
-            // Normalize direction and preserve ball speed
-            double speed = ball.getSpeed();
-
-            // newDirY should be upward
-            double newDirY = -Math.abs(ball.getVelY()) / Math.abs(ball.getVelY()); // -1 or 1; we want -1
-            if (Double.isNaN(newDirY) || Double.isInfinite(newDirY)) newDirY = -1.0;
-
-            // Set directions and velocities
-            ball.setVelX(speed * newDirX);
-            ball.setVelY(-Math.abs(ball.getVelY())); // ensure upward
+                // Decide side vs top collision: side if horizontal penetration is significantly smaller
+                if (overlapX > EPS && overlapX + EPS < overlapY) {
+                    // Side collision: reverse X velocity
+                    ball.setVelX(-ball.getVelX());
+                    // push ball horizontally out of paddle
+                    if (ball.centerX() < paddle.centerX()) {
+                        ball.setPosX(paddle.getPosX() - ball.getWidth() - PUSH_OUT);
+                    } else {
+                        ball.setPosX(paddle.getPosX() + paddle.getWidth() + PUSH_OUT);
+                    }
+                } else {
+                    // Top collision: bounce or snap above paddle
+                    double ballVelY = ball.getVelY();
+                    if (ballVelY > EPS) {
+                        // compute hit position and avoid strictly vertical directions
+                        double hitPos = (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5);
+                        hitPos = Math.max(-1.0, Math.min(1.0, hitPos));
+                        double newDirX = (Math.abs(hitPos) < 0.1) ? Math.copySign(0.1, hitPos == 0 ? 1.0 : hitPos) : hitPos;
+                        double speed = ball.getSpeed();
+                        ball.setVelX(speed * newDirX);
+                        ball.setVelY(-Math.abs(ball.getVelY()));
+                        // push slightly above paddle to prevent re-overlap
+                        ball.setPosY(paddle.getPosY() - ball.getHeight() - PUSH_OUT);
+                    } else {
+                        // edge cases: near-zero vertical velocity -> snap above paddle and carry paddle horizontal vel
+                        ball.setPosY(paddle.getPosY() - ball.getHeight());
+                        ball.setVelX(paddle.getVelX());
+                        ball.setVelY(0.0);
+                    }
+                }
+            }
+            // if not launched, ball should already have been snapped above paddle earlier — nothing to do here
         }
-
         // Bricks check
-        for (BrickFactory brick : bricks) {
+        for (Brick brick : bricks) {
             if (brick.isDestroyed()) continue;
 
             if (ball.intersects(brick)) {
                 // Apply 1 damage by default
                 boolean destroyed = brick.takeDamage(1);
+                if (destroyed) {
+                    GameObject spawn = brick.onDestroyed();
+                    if (spawn != null) powerUps.add(spawn);
+                }
                 // Bounce ball (reverse Y) as a simple response (more sophisticated handling
                 // would examine collision normal)
                 ball.setVelY(-ball.getVelY());
@@ -272,6 +336,29 @@ public class GameEngine {
 
                 // Stop after first hit this frame to avoid multi-hits in the same frame
                 break;
+            }
+        }
+        double ballBottom = ball.getPosY() + ball.getHeight();
+        if (ballBottom >= screenHeight - EPS) {
+            // If ball intersects paddle in same frame, treat as catch (we've already attempted bounce/snap above)
+            if (ball.intersects(paddle)) {
+                // If moving downward, ensure bounce; otherwise snap on top
+                if (ball.getVelY() > EPS) {
+                    ball.setVelY(-Math.abs(ball.getVelY()));
+                    ball.setPosY(paddle.getPosY() - ball.getHeight() - 0.5);
+                } else {
+                    ball.setPosY(paddle.getPosY() - ball.getHeight());
+                    ball.setVelX(paddle.getVelX());
+                    ball.setVelY(0.0);
+                }
+            } else {
+                // Missed: lose life
+                lives--;
+                if (lives <= 0) {
+                    gameOver = true;
+                } else {
+                    resetBall();
+                }
             }
         }
 
@@ -288,7 +375,7 @@ public class GameEngine {
     }
 
     private boolean allBricksDestroyed() {
-        for (BrickFactory brick : bricks) {
+        for (Brick brick : bricks) {
             if (!brick.isDestroyed()) return false;
         }
         return true;
