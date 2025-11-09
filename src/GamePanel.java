@@ -3,6 +3,9 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.IOException;
 
 /**
  * GamePanel: UI layer, handles input, ticking and rendering.
@@ -38,39 +41,91 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         // Render paddle and ball
         renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
-        renderer.render(g, gameEngine.getBall(), Color.RED);
+
+        Ball ball = gameEngine.getBall();
+        if (ball.getTexture() != null) {
+            g2d.drawImage(
+                    ball.getTexture(),
+                    (int) ball.getPosX(),
+                    (int) ball.getPosY(),
+                    (int) ball.getWidth(),
+                    (int) ball.getHeight(),
+                    null
+            );
+        }
 
         // Render bricks (only those not destroyed)
         for (var brick : gameEngine.getBricks()) {
             if (!brick.isDestroyed()) {
-                Color brickColor;
-                if (brick instanceof StrongBrick) {
-                    int hp = brick.getHitPoints();
-                    if (hp >= 3) {
-                        brickColor = new Color(139, 0, 0);
-                    } else if (hp == 2) {
-                        brickColor = new Color(178, 34, 34);
-                    } else {
-                        brickColor = new Color(205, 92, 92);
-                    }
+                if (brick.getTexture() != null) {
+                    // Nếu có ảnh texture → vẽ ảnh
+                    g2d.drawImage(
+                            brick.getTexture(),
+                            (int) brick.getPosX(),
+                            (int) brick.getPosY(),
+                            (int) brick.getWidth(),
+                            (int) brick.getHeight(),
+                            null
+                    );
                 } else {
-                    brickColor = Color.GREEN;
+                    Color brickColor;
+                    if (brick instanceof StrongBrick) {
+                        int hp = brick.getHitPoints();
+                        if (hp >= 3) {
+                            brickColor = new Color(139, 0, 0);
+                        } else if (hp == 2) {
+                            brickColor = new Color(178, 34, 34);
+                        } else {
+                            brickColor = new Color(205, 92, 92);
+                        }
+                    } else {
+                        brickColor = Color.GREEN;
+                    }
+                    renderer.render(g, brick, brickColor);
                 }
-                renderer.render(g, brick, brickColor);
             }
         }
         for (var powerball : gameEngine.getPowerUps()) {
-            Color powerballColor;
-            PowerUpBall powerBall =  (PowerUpBall) powerball;
-            if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Fire_Ball)) {
-                powerballColor = new Color(255, 60, 60);
-            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Enlarged_Ball)) {
-                powerballColor = new Color(255, 255, 255);
-            } else  {
-                powerballColor = new  Color(255, 0, 255);
+            PowerUpBall powerup = (PowerUpBall) powerball;
+            BufferedImage img = null;
+            try {
+                // Chỉ có Fire_Ball mới dùng texture riêng
+                if (powerup.getPowerUpType() == PowerUpBall.PowerUpType.Fire_Ball) {
+                    img = ImageIO.read(getClass().getResource("/textures/FireBall.png"));
+                } else {
+                    // Enlarged_Ball và các power-up khác đều dùng Ball.png
+                    img = ImageIO.read(getClass().getResource("/textures/Ball.png"));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            renderer.render(g, powerball, powerballColor);
+
+            int drawWidth = (int) powerup.getWidth();
+            int drawHeight = (int) powerup.getHeight();
+
+            // Nếu Enlarged_Ball → scale to hơn bình thường
+            if (powerup.getPowerUpType() == PowerUpBall.PowerUpType.Enlarged_Ball) {
+                drawWidth *= 1.5;   // hoặc 2.0 tùy muốn
+                drawHeight *= 1.5;
+            }
+
+            if (img != null) {
+                g2d.drawImage(
+                        img,
+                        (int) powerup.getPosX(),
+                        (int) powerup.getPosY(),
+                        drawWidth,
+                        drawHeight,
+                        null
+                );
+            } else {
+                // fallback màu
+                Color fallbackColor = (powerup.getPowerUpType() == PowerUpBall.PowerUpType.Fire_Ball) ?
+                        new Color(255, 60, 60) : Color.WHITE;
+                renderer.render(g, powerup, fallbackColor);
+            }
         }
+
 
         renderUI(g);
     }
