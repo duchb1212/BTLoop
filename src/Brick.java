@@ -1,4 +1,3 @@
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -7,7 +6,6 @@ public class Brick extends GameObject {
     private int hitPoints;
     private int screenWidth;
     private int screenHeight;
-    private BufferedImage texture;
 
     /**
      * Construct a Brick-like object (kept name Brick for compatibility).
@@ -56,14 +54,6 @@ public class Brick extends GameObject {
 
     public void setScreenHeight(int screenHeight) {
         this.screenHeight = screenHeight;
-    }
-
-    public BufferedImage getTexture() {
-        return texture;
-    }
-
-    public void setTexture(BufferedImage texture) {
-        this.texture = texture;
     }
 
     /**

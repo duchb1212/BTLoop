@@ -1,14 +1,8 @@
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 
 public class IceBrick extends Brick {
-    private BufferedImage texture;
-
     /**
-     * Create an IceBrick with given position, size and hit points.
+     * Create a NormalBrick with given position, size and hit points.
      *
      * @param posX initial x (top-left)
      * @param posY initial y (top-left)
@@ -18,27 +12,8 @@ public class IceBrick extends Brick {
      */
     public IceBrick(double posX, double posY, double width, double height, int screenWidth, int screenHeight, int hitPoints) {
         super(posX, posY, width, height, screenWidth, screenHeight, hitPoints);
-
-        try {
-            // Load texture image từ thư mục resources
-            URL imageUrl = getClass().getResource("/textures/WhiteBrick.png");
-            if (imageUrl == null) {
-                System.err.println("⚠️ Không tìm thấy ảnh WhiteBrick.png!");
-            } else {
-                texture = ImageIO.read(imageUrl);
-            }
-
-            texture = ImageIO.read(getClass().getResource("/textures/WhiteBrick.png"));
-
-        } catch (IOException | IllegalArgumentException e) {
-            e.printStackTrace();
-            texture = null; // fallback nếu load lỗi
-        }
     }
 
-    public BufferedImage getTexture() {
-        return texture;
-    }
 
     /**
      * Bricks are usually static; override if you need behavior.

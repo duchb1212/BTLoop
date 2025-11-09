@@ -2,9 +2,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import java.io.IOException;
 
 /**
  * Lớp Ball (Quả bóng) kế thừa từ MovableObject.
@@ -12,7 +9,6 @@ import java.io.IOException;
  * thông qua hàm update() của mình.
  */
 public class Ball extends MovableObject {
-    private BufferedImage texture;
 
     private double speed;    // Tốc độ cơ bản (ví dụ: 300 pixel/giây)
     private double dirX;     // Hướng X (1 hoặc -1)
@@ -45,14 +41,6 @@ public class Ball extends MovableObject {
         this.velX = speed * dirX;
         this.velY = speed * dirY;
         this.powerUps = new HashMap<PowerUpBall.PowerUpType, Double>();
-
-        // Render texture cho bóng
-        try {
-            texture = ImageIO.read(getClass().getResource("/textures/Ball.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            texture = null; // fallback nếu không load được
-        }
     }
 
     // --- Các hàm Getters / Setters (Bạn có thể thêm nếu cần) ---
@@ -80,9 +68,7 @@ public class Ball extends MovableObject {
         isLaunched = launched;
     }
 
-    public BufferedImage getTexture() {
-        return texture;
-    }
+
 
     /**
      * Kiểm tra va chạm với 4 bức tường.
