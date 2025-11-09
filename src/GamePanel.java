@@ -156,6 +156,40 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 gameEngine.restart();
             }
         }
+        // Quick Save - F5
+        else if (key == KeyEvent.VK_F5) {
+            if (SaveManager.quickSave(gameEngine)) {
+                System.out.println("✓ Quick Save successful!");
+            } else {
+                System.out.println("✗ Quick Save failed!");
+            }
+        }
+        // Quick Load - F9
+        else if (key == KeyEvent.VK_F9) {
+            if (SaveManager.quickLoad(gameEngine, getWidth(), getHeight())) {
+                System.out.println("✓ Quick Load successful!");
+            } else {
+                System.out.println("✗ Quick Load failed!");
+            }
+        }
+        // Save to slot 1-9 - Ctrl+1 through Ctrl+9
+        else if (e.isControlDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
+            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            if (SaveManager.saveToSlot(slot, gameEngine)) {
+                System.out.println("✓ Saved to slot " + slot);
+            } else {
+                System.out.println("✗ Failed to save to slot " + slot);
+            }
+        }
+        // Load from slot 1-9 - Alt+1 through Alt+9
+        else if (e.isAltDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
+            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            if (SaveManager.loadFromSlot(slot, gameEngine, getWidth(), getHeight())) {
+                System.out.println("✓ Loaded from slot " + slot);
+            } else {
+                System.out.println("✗ Failed to load from slot " + slot);
+            }
+        }
     }
 
     @Override
