@@ -20,6 +20,8 @@ public class Brick extends GameObject {
     public Brick(double posX, double posY, double width, double height, int screenWidth, int screenHeight, int hitPoints) {
         super(posX, posY, width, height);
         if (hitPoints < 0) throw new IllegalArgumentException("hitPoints must be >= 0");
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
         this.hitPoints = hitPoints;
     }
 
@@ -87,8 +89,8 @@ public class Brick extends GameObject {
     protected PowerUpBall onDestroyed() {
         // default: no-op
         Random rand = new Random();
-        if (rand.nextDouble() < 0.3) {
-            PowerUpBall.PowerUpType powerUpType = PowerUpBall.PowerUpType.values()[rand.nextInt(4)];
+        if (rand.nextDouble() < 1.0) {
+            PowerUpBall.PowerUpType powerUpType = PowerUpBall.PowerUpType.values()[rand.nextInt(6)];
             return new PowerUpBall(posX + (width / 2.0) - 5.0, posY + height, 10.0, 10.0,
                     0.0, 150.0, 150.0, 0.0, 1.0, screenWidth, screenHeight, powerUpType);
         } else {

@@ -14,7 +14,9 @@ public class PowerUpBall extends MovableObject {
         Normal_Ball,
         Fire_Ball,
         Enlarged_Ball,
-        Split_Ball;
+        Split_Ball,
+        Gun_Ball,
+        Heart_Ball;
     }
     private PowerUpType powerUpType;
 

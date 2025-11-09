@@ -22,6 +22,7 @@ public class Ball extends MovableObject {
     private int screenHeight;
 
     private static final double EPS = 1e-8;
+    private static final double PUSH_OUT = 3.0;
 
     /**
      * Hàm khởi tạo cho Ball
@@ -124,121 +125,105 @@ public class Ball extends MovableObject {
         }
 
         for (int iter = 0; iter < maxIterations && remainingTime > EPS; iter++) {
-
-            // Tính quãng đường sẽ di chuyển trong phần còn lại của frame
             double moveX = this.velX * deltaTime * remainingTime;
             double moveY = this.velY * deltaTime * remainingTime;
 
-            // Tìm va chạm sớm nhất trong phần move (theo t: 0..1 relative to this move)
-            CollisionResult bestCollision = new CollisionResult(); // t default = 1.0 (no collision)
+            CollisionResult bestCollision = new CollisionResult();
 
             for (GameObject other : allObjects) {
-                if (other == this) continue; // Bỏ qua, không tự va chạm với mình
+                if (other instanceof Ball) continue;
                 if (other instanceof PowerUpBall) continue;
-                // Bỏ qua vật thể vô hình/hỏng nếu cần (tùy codebase)
                 if (other instanceof Brick && ((Brick)other).isDestroyed()) continue;
 
-                // Gọi Swept AABB với quãng đường hiện tại (moveX, moveY)
                 CollisionResult currentCollision = CollisionUtils.sweptAABB(this, other, moveX, moveY);
-
-                // Chọn va chạm có t nhỏ nhất
                 if (currentCollision != null && currentCollision.t < bestCollision.t) {
                     bestCollision = currentCollision;
                 }
             }
 
-            if (bestCollision.t < 1.0 ) {
-                    this.lastCollision = bestCollision;
-                    // Nếu t quá nhỏ (gần 0), advance một epsilon để tránh stuck
-                    double t = bestCollision.t;
-                    if (t < EPS) {
-                        t = 0.0;
-                    }
+            if (bestCollision.t < 1.0) {
+                this.lastCollision = bestCollision;
 
-                    // Di chuyển bóng tới điểm va chạm (theo t của moveX/moveY)
-                    this.posX += moveX * t;
-                    this.posY += moveY * t;
+                double t = Math.max(bestCollision.t, 0.0);
 
-                    // Xử lý nảy bóng dựa trên pháp tuyến (normal)
-                    if (bestCollision.normalX != 0.0) { // Va chạm ngang
-                        if (bestCollision.targetObject instanceof Paddle) {
+                this.posX += moveX * t;
+                this.posY += moveY * t;
+
+                if (bestCollision.normalX != 0.0) {
+                    if (bestCollision.targetObject instanceof Paddle) {
+                        this.dirX = -this.dirX;
+                    } else {
+                        if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
                             this.dirX = -this.dirX;
-                        } else {
-                            if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
-                                this.dirX = -this.dirX;
-                            }
                         }
-                        this.velX = this.speed * this.dirX;
                     }
-                    if (bestCollision.normalY != 0.0) { // Va chạm dọc
-                        if (bestCollision.targetObject instanceof Paddle) {
+                    this.velX = this.speed * this.dirX;
+                }
+                if (bestCollision.normalY != 0.0) {
+                    if (bestCollision.targetObject instanceof Paddle) {
+                        this.dirY = -this.dirY;
+                    } else {
+                        if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
                             this.dirY = -this.dirY;
-                        } else {
-                            if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
-                                this.dirY = -this.dirY;
-                            }
                         }
-                        this.velY = this.speed * this.dirY;
                     }
+                    this.velY = this.speed * this.dirY;
+                }
 
-                    // Xử lý logic game (ví dụ: phá gạch)
-                    // if (bestCollision.targetObject instanceof Brick) {
-                    //     ((Brick) bestCollision.targetObject).destroy();
-                    // }
-                    if (bestCollision.targetObject instanceof Brick) {
-                        Brick Brick = (Brick) bestCollision.targetObject;
-                        Brick.takeDamage(1);
-                    }
+                remainingTime -= bestCollision.t;
 
-                    // Cập nhật remainingTime: giảm theo t đã sử dụng
-                    // Lưu ý: t là tỷ lệ trên moveX/moveY hiện tại, nên trừ trực tiếp
-                    remainingTime -= bestCollision.t;
+                if (bestCollision.t < EPS) {
+                    if (bestCollision.normalX > 0) this.posX += PUSH_OUT;
+                    else if (bestCollision.normalX < 0) this.posX -= PUSH_OUT;
+                    if (bestCollision.normalY > 0) this.posY += PUSH_OUT;
+                    else if (bestCollision.normalY < 0) this.posY -= PUSH_OUT;
 
-                    // Nếu bestCollision.t == 0 (hoặc rất nhỏ), tránh lặp vô hạn:
-                    if (bestCollision.t <= EPS) {
-                        // Đẩy nhẹ quả bóng ra khỏi va chạm theo normal (simple push-out)
-                        if (bestCollision.normalX > 0) this.posX += EPS;
-                        else if (bestCollision.normalX < 0) this.posX -= EPS;
-                        if (bestCollision.normalY > 0) this.posY += EPS;
-                        else if (bestCollision.normalY < 0) this.posY -= EPS;
+                    remainingTime = 0.0;
+                    break;
+                }
 
-                        // Đồng thời giảm remainingTime một lượng nhỏ để tiến triển
-                        remainingTime -= EPS;
-                    }
+                if (remainingTime <= EPS) break;
 
-                    // Clamp remainingTime
-                    if (remainingTime <= EPS) {
-                        break;
-                    }
-
-                    // Sau khi phản xạ, vòng lặp sẽ tiếp tục với remainingTime đã cập nhật.
-                    // Lưu ý: ở đầu vòng tiếp theo, moveX/moveY sẽ được tính lại theo velX/velY mới.
             } else {
-                // Không có va chạm -> di chuyển nốt phần còn lại và thoát
                 this.posX += moveX;
                 this.posY += moveY;
                 remainingTime = 0.0;
                 break;
             }
-        } // end for iterations
+        }
         Iterator<Map.Entry<PowerUpBall.PowerUpType, Double>> iterator = powerUps.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry<PowerUpBall.PowerUpType, Double> entry = iterator.next();
             PowerUpBall.PowerUpType type = entry.getKey();
 
-            // Giảm thời gian
             double remaining = entry.getValue() - deltaTime;
-
             if (remaining <= 0) {
-                // Hết giờ, xóa khỏi map
                 iterator.remove();
-                // (Bạn cũng có thể kích hoạt logic "hết power-up" ở đây)
             } else {
-                // Chưa hết giờ, cập nhật lại thời gian mới
                 entry.setValue(remaining);
             }
         }
+    }
+
+    public Ball cloneAt(double posX, double posY, double velX, double velY) {
+        double len = Math.sqrt(velX * velX + velY * velY);
+        double newDirX,  newDirY, newSpeed;
+
+        if (len > 1e-6) {
+            newDirX = velX / len;
+            newDirY = velY / len;
+            newSpeed = len;
+        } else {
+            newDirY = this.dirY;
+            newDirX = this.dirX;
+            newSpeed = this.speed;
+        }
+
+        Ball out = new Ball(posX, posY, this.width, this.height, newSpeed, newDirX, newDirY, screenWidth, screenHeight);
+        out.setLaunched(true);
+        out.getPowerUps().putAll(this.powerUps);
+        return out;
     }
 
     /**

@@ -38,7 +38,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         // Render paddle and ball
         renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
-        renderer.render(g, gameEngine.getBall(), Color.RED);
+        for (var ball : gameEngine.getBalls()) {
+            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                renderer.render(g, ball, Color.RED);
+            } else {
+                renderer.render(g, ball, Color.WHITE);
+            }
+        }
 
         // Render bricks (only those not destroyed)
         for (var brick : gameEngine.getBricks()) {
@@ -66,8 +72,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 powerballColor = new Color(255, 60, 60);
             } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Enlarged_Ball)) {
                 powerballColor = new Color(255, 255, 255);
-            } else  {
+            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Split_Ball)) {
                 powerballColor = new  Color(255, 0, 255);
+            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Heart_Ball)) {
+                powerballColor = new Color(255, 0, 150);
+            } else {
+                powerballColor = new Color(255, 255, 0);
             }
             renderer.render(g, powerball, powerballColor);
         }
@@ -127,9 +137,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         if (key == KeyEvent.VK_SPACE) {
-            if (!gameEngine.getBall().isLaunched()) {
+            if (!gameEngine.getBalls().get(0).isLaunched()) {
                 // initial launch direction: slightly to the right and upward
-                gameEngine.getBall().launch(0.2, -1.0);
+                gameEngine.getBalls().get(0).launch(0.2, -1.0);
             }
         }
         if (key == KeyEvent.VK_LEFT) {
