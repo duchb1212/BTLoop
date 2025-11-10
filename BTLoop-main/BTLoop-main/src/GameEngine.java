@@ -369,7 +369,7 @@ public class GameEngine {
         } else if (type == Buff.BuffType.Heart_Ball) {
             lives ++;
         } else {
-            balls.forEach(ball -> ball.getPowerUps().put(type, 5.0));
+            balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
     }
 

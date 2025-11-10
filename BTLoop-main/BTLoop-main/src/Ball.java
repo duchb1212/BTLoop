@@ -12,7 +12,10 @@ import java.io.IOException;
  * thông qua hàm update() của mình.
  */
 public class Ball extends MovableObject {
-    private BufferedImage texture;    private double speed;    // Tốc độ cơ bản (ví dụ: 300 pixel/giây)
+    private BufferedImage texture;
+    private BufferedImage normalTexture;
+    private BufferedImage fireTexture;
+    private double speed;    // Tốc độ cơ bản (ví dụ: 300 pixel/giây)
     private double dirX;     // Hướng X (1 hoặc -1)
     private double dirY;     // Hướng Y (1 hoặc -1)
     public CollisionResult lastCollision = null;
@@ -44,13 +47,15 @@ public class Ball extends MovableObject {
         this.velY = speed * dirY;
         this.buffs = new HashMap<Buff.BuffType, Double>();
 
-        // Render texture cho bóng
         try {
-            texture = ImageIO.read(getClass().getResource("/textures/Ball.png"));
+            normalTexture = ImageIO.read(getClass().getResource("/textures/Ball.png"));
+            fireTexture = ImageIO.read(getClass().getResource("/textures/FireBall.png"));
+            texture = normalTexture; // mặc định là bóng thường
         } catch (IOException e) {
             e.printStackTrace();
-            texture = null; // fallback nếu không load được
+            texture = null;
         }
+
     }
 
     // --- Các hàm Getters / Setters (Bạn có thể thêm nếu cần) ---
@@ -62,11 +67,11 @@ public class Ball extends MovableObject {
         this.velY = this.speed * this.dirY;
     }
 
-    public HashMap<Buff.BuffType, Double> getPowerUps() {
+    public HashMap<Buff.BuffType, Double> getBuffs() {
         return buffs;
     }
 
-    public void setPowerUps(HashMap<Buff.BuffType, Double> powerUps) {
+    public void setBuffs(HashMap<Buff.BuffType, Double> powerUps) {
         this.buffs = buffs;
     }
 
@@ -203,19 +208,14 @@ public class Ball extends MovableObject {
                 break;
             }
         }
-        Iterator<Map.Entry<Buff.BuffType, Double>> iterator = buffs.entrySet().iterator();
 
-        while (iterator.hasNext()) {
-            Map.Entry<Buff.BuffType, Double> entry = iterator.next();
-            Buff.BuffType type = entry.getKey();
-
-            double remaining = entry.getValue() - deltaTime;
-            if (remaining <= 0) {
-                iterator.remove();
-            } else {
-                entry.setValue(remaining);
-            }
+        // --- Cập nhật texture theo buff ---
+        if (buffs.containsKey(Buff.BuffType.Fire_Ball)) {
+            texture = fireTexture;
+        } else {
+            texture = normalTexture;
         }
+
     }
 
     public Ball cloneAt(double posX, double posY, double velX, double velY) {
@@ -234,7 +234,7 @@ public class Ball extends MovableObject {
 
         Ball out = new Ball(posX, posY, this.width, this.height, newSpeed, newDirX, newDirY, screenWidth, screenHeight);
         out.setLaunched(true);
-        out.getPowerUps().putAll(this.buffs);
+        out.getBuffs().putAll(this.buffs);
         return out;
     }
 
