@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import javax.sound.sampled.*;
 
 /**
  * GamePanel: UI layer, handles input, ticking and rendering.
@@ -27,6 +28,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         timer = new Timer(1000 / 60, this);
         timer.start();
+
+        SoundManager.playBackgroundMusic("C:/Users/DLC/OneDrive/Documents/GitHub/BTLoop-main/BTLoop-main/src/sounds/Music.wav");
+
     }
 
     @Override
