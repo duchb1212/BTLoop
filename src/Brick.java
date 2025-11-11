@@ -87,7 +87,7 @@ public class Brick extends GameObject {
         // default: no-op
         Random rand = new Random();
         if (rand.nextDouble() < 1.0) {
-            Buff.BuffType powerUpType = Buff.BuffType.values()[rand.nextInt(6)];
+            Buff.BuffType powerUpType = Buff.BuffType.values()[rand.nextInt(7)];
             return new Buff(posX + (width / 2.0) - 5.0, posY + height, 10.0, 10.0,
                     0.0, 150.0, 150.0, 0.0, 1.0, screenWidth, screenHeight, powerUpType);
         } else {
