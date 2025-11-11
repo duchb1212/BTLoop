@@ -215,6 +215,11 @@ public class GameEngine {
             if (!brick.isDestroyed()) allObjects.add(brick);
         }
         allObjects.addAll(buffs);
+        if (balls.getFirst().getPowerUps().containKey(PowerUpBall.PowerUpType.EnlargedPaddle_Ball)) {
+            paddle.setWidth(200);
+        } else {
+            paddle.setWidth(100);
+        }    
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, allObjects);
         for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
