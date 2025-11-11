@@ -215,10 +215,12 @@ public class GameEngine {
             if (!brick.isDestroyed()) allObjects.add(brick);
         }
         allObjects.addAll(buffs);
-        if (balls.getFirst().getPowerUps().containKey(PowerUpBall.PowerUpType.EnlargedPaddle_Ball)) {
+        if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.EnlargedPaddle_Ball)) {
             paddle.setWidth(200);
+            paddle.enlarge();
         } else {
             paddle.setWidth(100);
+            paddle.minimize();
         }    
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, allObjects);
@@ -328,6 +330,7 @@ public class GameEngine {
             if (spawn != null) {
                 buffs.add(spawn);
             }
+            SoundManager.playSoundEffect("src/sounds/Brick Sound.wav");
             score += (brick instanceof NormalBrick) ? pointNormalBricks : pointStrongBricks;
         }
     }

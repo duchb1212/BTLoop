@@ -41,7 +41,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         timer = new Timer(1000 / 60, this);
         timer.start();
 
-        SoundManager.playBackgroundMusic("C:/Users/DLC/OneDrive/Documents/GitHub/BTLoop-main/BTLoop-main/src/sounds/Music.wav");
+        SoundManager.playBackgroundMusic("src/sounds/Music.wav");
 
     }
 
@@ -59,16 +59,28 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         repaint();
     }
 
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
+
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Render paddle and ball
-        renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
+        // Render paddle
+        var paddle = gameEngine.getPaddle();
+        if (paddle.getTexture() != null) {
+            g2d.drawImage(
+                    paddle.getTexture(),
+                    (int) paddle.getPosX(),
+                    (int) paddle.getPosY(),
+                    (int) paddle.getWidth(),
+                    (int) paddle.getHeight(),
+                    null
+            );
+        }
+
+        // Render ball
         for (var ball : gameEngine.getBalls()) {
             if (ball.getTexture() != null) {
                 g2d.drawImage(
@@ -86,7 +98,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         for (var brick : gameEngine.getBricks()) {
             if (!brick.isDestroyed()) {
                 if (brick.getTexture() != null) {
-                    // Nếu có ảnh texture → vẽ ảnh
                     g2d.drawImage(
                             brick.getTexture(),
                             (int) brick.getPosX(),
@@ -96,9 +107,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                             null
                     );
                 }
-                renderer.render(g, brick, Color.GREEN);
             }
         }
+
+        // Render powerballs
         for (var powerball : gameEngine.getPowerUps()) {
             Color powerballColor;
             Buff powerBall =  (Buff) powerball;
@@ -110,8 +122,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 powerballColor = new  Color(255, 0, 255);
             } else if (powerBall.getBuffType().equals(Buff.BuffType.Heart_Ball)) {
                 powerballColor = new Color(255, 0, 150);
-            } else {
+            } else if (powerBall.getBuffType().equals(Buff.BuffType.Gun_Ball)) {
                 powerballColor = new Color(255, 255, 0);
+            } else if (powerBall.getBuffType().equals(Buff.BuffType.EnlargedPaddle_Ball)) {
+                powerballColor = new Color(0, 255, 0);
+            } else {
+                powerballColor = null;
             }
             renderer.render(g, powerball, powerballColor);
         }

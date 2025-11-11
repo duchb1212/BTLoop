@@ -3,11 +3,14 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 
 public class Paddle extends MovableObject {
     protected double speed;
     protected double screenX;
     private BufferedImage texture;
+    private BufferedImage normalTexture;
+    private BufferedImage enlargedTexture;
 
     /**
      * @param posX    initial X position (top-left)
@@ -26,15 +29,9 @@ public class Paddle extends MovableObject {
         this.screenX = screenX;
 
         try {
-            // Load texture image từ thư mục resources
-            URL imageUrl = getClass().getResource("/textures/Paddle.png");
-            if (imageUrl == null) {
-                System.err.println("⚠️ Không tìm thấy ảnh Paddle.png!");
-            } else {
-                texture = ImageIO.read(imageUrl);
-            }
-
-            texture = ImageIO.read(getClass().getResource("/textures/Paddle.png"));
+            normalTexture = ImageIO.read(getClass().getResource("/textures/Paddle.png"));
+            enlargedTexture = ImageIO.read(getClass().getResource("/textures/Enlarged Paddle.png"));
+            texture = normalTexture; // mặc định là bóng thường
 
         } catch (IOException | IllegalArgumentException e) {
             e.printStackTrace();
@@ -64,6 +61,10 @@ public class Paddle extends MovableObject {
         return texture;
     }
 
+    public void setTexture(BufferedImage texture) {
+        this.texture = texture;
+    }
+
     /** Start moving left at configured speed. */
     public void moveLeft() {
         this.velX = -Math.abs(speed);
@@ -77,6 +78,14 @@ public class Paddle extends MovableObject {
     /** Stop horizontal movement. */
     public void stop() {
         this.velX = 0.0;
+    }
+
+    public void enlarge() {
+        this.texture = enlargedTexture;
+    }
+
+    public void minimize() {
+        this.texture = normalTexture;
     }
 
     /**
