@@ -13,9 +13,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private GameEngine gameEngine;
     private Renderer renderer;
     private Timer timer;
+    private PauseOverLay pauseOverlay;
+    private boolean isPaused = false;
+
 
     private boolean pressedLeft = false;
     private boolean pressedRight = false;
+    private GameEngine engine;
 
     public GamePanel(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -26,12 +30,35 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         gameEngine = new GameEngine(width, height);
         renderer = new Renderer();
 
+        // --- Pause Overlay ---
+        pauseOverlay = new PauseOverLay(this, gameEngine);
+        pauseOverlay.setBounds(0, 0, width, height);
+        pauseOverlay.setVisible(false);
+        setLayout(null);
+        add(pauseOverlay);
+
+
         timer = new Timer(1000 / 60, this);
         timer.start();
 
         SoundManager.playBackgroundMusic("C:/Users/DLC/OneDrive/Documents/GitHub/BTLoop-main/BTLoop-main/src/sounds/Music.wav");
 
     }
+
+    public void togglePause() {
+        isPaused = !isPaused;
+        gameEngine.setPaused(isPaused);
+        pauseOverlay.setVisible(isPaused);
+        repaint();
+    }
+
+    public void hidePauseOverlay() {
+        isPaused = false;
+        gameEngine.setPaused(false);
+        pauseOverlay.setVisible(false);
+        repaint();
+    }
+
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -100,12 +127,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         g.drawString("Lives: " + gameEngine.getLives(), 10, 40);
 
         int lineHeight = 50;
-        if (gameEngine.isPaused()) {
-            g.setFont(new Font("Arial", Font.BOLD, 48));
-            String pausedText = "Paused";
-            int textWidth = g.getFontMetrics().stringWidth(pausedText);
-            g.drawString(pausedText, (getWidth() - textWidth) / 2, getHeight() / 2);
-        } else if (gameEngine.isGameOver()) {
+        if (gameEngine.isGameOver()) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
             String gameOver = "Game Over";
             int textWidth = g.getFontMetrics().stringWidth(gameOver);
@@ -125,6 +147,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
         }
     }
+
+    public void setEngine(GameEngine engine) {
+        this.engine = engine;
+    }
+
 
     @Override
     public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -149,6 +176,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 gameEngine.getBalls().get(0).launch(0.2, -1.0);
             }
         }
+        if (key == KeyEvent.VK_ESCAPE) {
+            togglePause();
+        }
+
         if (key == KeyEvent.VK_LEFT) {
             pressedLeft = true;
         }
