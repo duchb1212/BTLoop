@@ -1,11 +1,13 @@
 import java.util.ArrayList;
 import java.util.Random;
+import java.awt.image.BufferedImage;
 
 public class Brick extends GameObject {
     // Use private for encapsulation
     private int hitPoints;
     private int screenWidth;
     private int screenHeight;
+    private BufferedImage texture;
 
     /**
      * Construct a Brick-like object (kept name Brick for compatibility).
@@ -23,6 +25,10 @@ public class Brick extends GameObject {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.hitPoints = hitPoints;
+    }
+
+    public BufferedImage getTexture() {
+        return texture;
     }
 
     /**
@@ -57,15 +63,6 @@ public class Brick extends GameObject {
     }
 
     /**
-     * Factory method to create a new brick instance of this concrete type at the given position.
-     * Concrete subclasses should implement and return a new instance with the same properties
-     * (size, initial HP, etc.) positioned at posX/posY.
-     *
-     * @param posX target X
-     * @param posY target Y
-     * @return a new Brick instance (concrete subclass)
-     */
-    /**
      * Apply damage to this brick. Returns true if the brick was destroyed by this damage.
      *
      * @param damage amount of damage to apply (>= 0)
@@ -86,12 +83,12 @@ public class Brick extends GameObject {
      * Hook called when the brick is destroyed. Subclasses may override to play effects,
      * drop items, increment score, etc. Default implementation does nothing.
      */
-    protected PowerUpBall onDestroyed() {
+    protected Buff onDestroyed() {
         // default: no-op
         Random rand = new Random();
         if (rand.nextDouble() < 1.0) {
-            PowerUpBall.PowerUpType powerUpType = PowerUpBall.PowerUpType.values()[rand.nextInt(6)];
-            return new PowerUpBall(posX + (width / 2.0) - 5.0, posY + height, 10.0, 10.0,
+            Buff.BuffType powerUpType = Buff.BuffType.values()[rand.nextInt(6)];
+            return new Buff(posX + (width / 2.0) - 5.0, posY + height, 10.0, 10.0,
                     0.0, 150.0, 150.0, 0.0, 1.0, screenWidth, screenHeight, powerUpType);
         } else {
             return null;

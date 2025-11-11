@@ -309,10 +309,10 @@ public class SaveManager {
         Element powerUpsEl = doc.createElement("PowerUps");
 
         for (GameObject powerUp : powerUps) {
-            if (powerUp instanceof PowerUpBall) {
-                PowerUpBall pup = (PowerUpBall) powerUp;
+            if (powerUp instanceof Buff) {
+                Buff pup = (Buff) powerUp;
                 Map<String, String> attrs = new HashMap<>();
-                attrs.put("type", pup.getPowerUpType().toString());
+                attrs.put("type", pup.getBuffType().toString());
                 attrs.put("posX", String.valueOf(pup.getPosX()));
                 attrs.put("posY", String.valueOf(pup.getPosY()));
                 attrs.put("width", String.valueOf(pup.getWidth()));

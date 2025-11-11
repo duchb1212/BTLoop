@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import javax.sound.sampled.*;
 
 /**
  * GamePanel: UI layer, handles input, ticking and rendering.
@@ -27,6 +28,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         timer = new Timer(1000 / 60, this);
         timer.start();
+
+        SoundManager.playBackgroundMusic("C:/Users/DLC/OneDrive/Documents/GitHub/BTLoop-main/BTLoop-main/src/sounds/Music.wav");
+
     }
 
     @Override
@@ -39,42 +43,45 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         // Render paddle and ball
         renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
         for (var ball : gameEngine.getBalls()) {
-            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
-                renderer.render(g, ball, Color.RED);
-            } else {
-                renderer.render(g, ball, Color.WHITE);
+            if (ball.getTexture() != null) {
+                g2d.drawImage(
+                        ball.getTexture(),
+                        (int) ball.getPosX(),
+                        (int) ball.getPosY(),
+                        (int) ball.getWidth(),
+                        (int) ball.getHeight(),
+                        null
+                );
             }
         }
 
         // Render bricks (only those not destroyed)
         for (var brick : gameEngine.getBricks()) {
             if (!brick.isDestroyed()) {
-                Color brickColor;
-                if (brick instanceof StrongBrick) {
-                    int hp = brick.getHitPoints();
-                    if (hp >= 3) {
-                        brickColor = new Color(139, 0, 0);
-                    } else if (hp == 2) {
-                        brickColor = new Color(178, 34, 34);
-                    } else {
-                        brickColor = new Color(205, 92, 92);
-                    }
-                } else {
-                    brickColor = Color.GREEN;
+                if (brick.getTexture() != null) {
+                    // Nếu có ảnh texture → vẽ ảnh
+                    g2d.drawImage(
+                            brick.getTexture(),
+                            (int) brick.getPosX(),
+                            (int) brick.getPosY(),
+                            (int) brick.getWidth(),
+                            (int) brick.getHeight(),
+                            null
+                    );
                 }
-                renderer.render(g, brick, brickColor);
+                renderer.render(g, brick, Color.GREEN);
             }
         }
         for (var powerball : gameEngine.getPowerUps()) {
             Color powerballColor;
-            PowerUpBall powerBall =  (PowerUpBall) powerball;
-            if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Fire_Ball)) {
+            Buff powerBall =  (Buff) powerball;
+            if (powerBall.getBuffType().equals(Buff.BuffType.Fire_Ball)) {
                 powerballColor = new Color(255, 60, 60);
-            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Enlarged_Ball)) {
+            } else if (powerBall.getBuffType().equals(Buff.BuffType.Enlarged_Ball)) {
                 powerballColor = new Color(255, 255, 255);
-            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Split_Ball)) {
+            } else if (powerBall.getBuffType().equals(Buff.BuffType.Split_Ball)) {
                 powerballColor = new  Color(255, 0, 255);
-            } else if (powerBall.getPowerUpType().equals(PowerUpBall.PowerUpType.Heart_Ball)) {
+            } else if (powerBall.getBuffType().equals(Buff.BuffType.Heart_Ball)) {
                 powerballColor = new Color(255, 0, 150);
             } else {
                 powerballColor = new Color(255, 255, 0);

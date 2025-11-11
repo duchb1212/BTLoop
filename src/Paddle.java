@@ -1,7 +1,13 @@
 import java.util.ArrayList;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.IOException;
+import java.net.URL;
+
 public class Paddle extends MovableObject {
     protected double speed;
     protected double screenX;
+    private BufferedImage texture;
 
     /**
      * @param posX    initial X position (top-left)
@@ -18,6 +24,22 @@ public class Paddle extends MovableObject {
         if (screenX < 0) throw new IllegalArgumentException("screenX must be >= 0");
         this.speed = speed;
         this.screenX = screenX;
+
+        try {
+            // Load texture image từ thư mục resources
+            URL imageUrl = getClass().getResource("/textures/Paddle.png");
+            if (imageUrl == null) {
+                System.err.println("⚠️ Không tìm thấy ảnh Paddle.png!");
+            } else {
+                texture = ImageIO.read(imageUrl);
+            }
+
+            texture = ImageIO.read(getClass().getResource("/textures/Paddle.png"));
+
+        } catch (IOException | IllegalArgumentException e) {
+            e.printStackTrace();
+            texture = null; // fallback nếu load lỗi
+        }
     }
 
     public double getSpeed() {
@@ -35,6 +57,11 @@ public class Paddle extends MovableObject {
     public void setScreenX(double screenX) {
         if (screenX < 0) throw new IllegalArgumentException("screenX must be >= 0");
         this.screenX = screenX;
+    }
+
+    @Override
+    public BufferedImage getTexture() {
+        return texture;
     }
 
     /** Start moving left at configured speed. */

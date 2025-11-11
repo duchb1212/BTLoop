@@ -2,6 +2,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.IOException;
 
 /**
  * Lớp Ball (Quả bóng) kế thừa từ MovableObject.
@@ -9,12 +12,14 @@ import java.util.Map;
  * thông qua hàm update() của mình.
  */
 public class Ball extends MovableObject {
-
+    private BufferedImage texture;
+    private BufferedImage normalTexture;
+    private BufferedImage fireTexture;
     private double speed;    // Tốc độ cơ bản (ví dụ: 300 pixel/giây)
     private double dirX;     // Hướng X (1 hoặc -1)
     private double dirY;     // Hướng Y (1 hoặc -1)
     public CollisionResult lastCollision = null;
-    private HashMap<PowerUpBall.PowerUpType, Double> powerUps ;
+    private HashMap<Buff.BuffType, Double> buffs ;
     private boolean isLaunched = false;
 
     // Lưu trữ kích thước màn hình để kiểm tra va chạm tường
@@ -40,7 +45,17 @@ public class Ball extends MovableObject {
         // Thiết lập vận tốc (velX, velY) ban đầu dựa trên tốc độ và hướng
         this.velX = speed * dirX;
         this.velY = speed * dirY;
-        this.powerUps = new HashMap<PowerUpBall.PowerUpType, Double>();
+        this.buffs = new HashMap<Buff.BuffType, Double>();
+
+        try {
+            normalTexture = ImageIO.read(getClass().getResource("/textures/Ball.png"));
+            fireTexture = ImageIO.read(getClass().getResource("/textures/FireBall.png"));
+            texture = normalTexture; // mặc định là bóng thường
+        } catch (IOException e) {
+            e.printStackTrace();
+            texture = null;
+        }
+
     }
 
     // --- Các hàm Getters / Setters (Bạn có thể thêm nếu cần) ---
@@ -52,12 +67,12 @@ public class Ball extends MovableObject {
         this.velY = this.speed * this.dirY;
     }
 
-    public HashMap<PowerUpBall.PowerUpType, Double> getPowerUps() {
-        return powerUps;
+    public HashMap<Buff.BuffType, Double> getBuffs() {
+        return buffs;
     }
 
-    public void setPowerUps(HashMap<PowerUpBall.PowerUpType, Double> powerUps) {
-        this.powerUps = powerUps;
+    public void setBuffs(HashMap<Buff.BuffType, Double> powerUps) {
+        this.buffs = buffs;
     }
 
     public boolean isLaunched() {
@@ -68,7 +83,9 @@ public class Ball extends MovableObject {
         isLaunched = launched;
     }
 
-
+    public BufferedImage getTexture() {
+        return texture;
+    }
 
     /**
      * Kiểm tra va chạm với 4 bức tường.
@@ -116,7 +133,7 @@ public class Ball extends MovableObject {
         // Giới hạn số lần lặp xử lý va chạm trong 1 frame để tránh vòng lặp vô hạn.
         int maxIterations = 5;
 
-        if (this.powerUps.containsKey(PowerUpBall.PowerUpType.Enlarged_Ball)) {
+        if (this.buffs.containsKey(Buff.BuffType.Enlarged_Ball)) {
             this.width = 30.0;
             this.height = 30.0;
         } else {
@@ -132,7 +149,7 @@ public class Ball extends MovableObject {
 
             for (GameObject other : allObjects) {
                 if (other instanceof Ball) continue;
-                if (other instanceof PowerUpBall) continue;
+                if (other instanceof Buff) continue;
                 if (other instanceof Brick && ((Brick)other).isDestroyed()) continue;
 
                 CollisionResult currentCollision = CollisionUtils.sweptAABB(this, other, moveX, moveY);
@@ -153,7 +170,7 @@ public class Ball extends MovableObject {
                     if (bestCollision.targetObject instanceof Paddle) {
                         this.dirX = -this.dirX;
                     } else {
-                        if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                        if (!this.buffs.containsKey(Buff.BuffType.Fire_Ball)) {
                             this.dirX = -this.dirX;
                         }
                     }
@@ -163,7 +180,7 @@ public class Ball extends MovableObject {
                     if (bestCollision.targetObject instanceof Paddle) {
                         this.dirY = -this.dirY;
                     } else {
-                        if (!this.powerUps.containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                        if (!this.buffs.containsKey(Buff.BuffType.Fire_Ball)) {
                             this.dirY = -this.dirY;
                         }
                     }
@@ -191,19 +208,14 @@ public class Ball extends MovableObject {
                 break;
             }
         }
-        Iterator<Map.Entry<PowerUpBall.PowerUpType, Double>> iterator = powerUps.entrySet().iterator();
 
-        while (iterator.hasNext()) {
-            Map.Entry<PowerUpBall.PowerUpType, Double> entry = iterator.next();
-            PowerUpBall.PowerUpType type = entry.getKey();
-
-            double remaining = entry.getValue() - deltaTime;
-            if (remaining <= 0) {
-                iterator.remove();
-            } else {
-                entry.setValue(remaining);
-            }
+        // --- Cập nhật texture theo buff ---
+        if (buffs.containsKey(Buff.BuffType.Fire_Ball)) {
+            texture = fireTexture;
+        } else {
+            texture = normalTexture;
         }
+
     }
 
     public Ball cloneAt(double posX, double posY, double velX, double velY) {
@@ -222,7 +234,7 @@ public class Ball extends MovableObject {
 
         Ball out = new Ball(posX, posY, this.width, this.height, newSpeed, newDirX, newDirY, screenWidth, screenHeight);
         out.setLaunched(true);
-        out.getPowerUps().putAll(this.powerUps);
+        out.getBuffs().putAll(this.buffs);
         return out;
     }
 

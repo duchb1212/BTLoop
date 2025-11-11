@@ -1,3 +1,4 @@
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public abstract class GameObject {
@@ -6,6 +7,8 @@ public abstract class GameObject {
 
     protected double width;
     protected double height;
+
+    private BufferedImage texture;
 
     /**
      * Construct a game object with position and size.
@@ -60,6 +63,11 @@ public abstract class GameObject {
         if (height < 0) throw new IllegalArgumentException("height must be >= 0");
         this.height = height;
     }
+
+    public BufferedImage getTexture() {
+        return texture;
+    }
+    public void setTexture(BufferedImage texture) {}
 
     /**
      * Update this object. Kept signature with ArrayList<GameObject> to match your existing code.

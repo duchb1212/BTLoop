@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * GameEngine orchestrates game objects and high-level game state.
@@ -16,14 +15,14 @@ public class GameEngine {
     private Paddle paddle;
 
     private ArrayList<Brick> bricks;
-    private ArrayList<GameObject> powerUps;
+    private ArrayList<GameObject> buffs;
+    private ArrayList<Ball> balls;
 
     private int score;
     private int lives;
     private boolean gameOver;
     private boolean gameWon;
     private boolean paused;
-    private ArrayList<Ball> balls;
     private final int Max_Ball = 6;
     private int screenWidth;
     private int screenHeight;
@@ -39,7 +38,7 @@ public class GameEngine {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.bricks = new ArrayList<>();
-        this.powerUps = new ArrayList<>();
+        this.buffs = new ArrayList<>();
         this.balls = new ArrayList<>();
         initGame();
     }
@@ -53,7 +52,6 @@ public class GameEngine {
         this.paddle = paddle;
     }
 
-
     public ArrayList<Brick> getBricks() {
         return bricks;
     }
@@ -63,11 +61,11 @@ public class GameEngine {
     }
 
     public ArrayList<GameObject> getPowerUps() {
-        return powerUps;
+        return buffs;
     }
 
     public void setPowerUps(ArrayList<GameObject> powerUps) {
-        this.powerUps = powerUps;
+        this.buffs = powerUps;
     }
 
     public ArrayList<Ball> getBalls() {
@@ -167,7 +165,7 @@ public class GameEngine {
         paused = false;
 
         createBricks();
-        powerUps.clear();
+        buffs.clear();
     }
 
     private void createBricks() {
@@ -216,19 +214,19 @@ public class GameEngine {
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) allObjects.add(brick);
         }
-        allObjects.addAll(powerUps);
+        allObjects.addAll(buffs);
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, allObjects);
-        for (Iterator<GameObject> it = powerUps.iterator(); it.hasNext(); ) {
+        for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
             // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
-            if (obj instanceof PowerUpBall pup) {
+            if (obj instanceof Buff pup) {
                 pup.update(deltaTime, allObjects);
 
                 // If collected by paddle
                 if (paddle.intersects(pup)) {
                     // apply effect
-                    applyPowerUp(pup.getPowerUpType());
+                    applyBuff(pup.getBuffType());
                     // mark / remove
                     it.remove();
                     continue;
@@ -323,7 +321,7 @@ public class GameEngine {
         if (destroyed) {
             GameObject spawn = brick.onDestroyed();
             if (spawn != null) {
-                powerUps.add(spawn);
+                buffs.add(spawn);
             }
             score += (brick instanceof NormalBrick) ? pointNormalBricks : pointStrongBricks;
         }
@@ -358,20 +356,20 @@ public class GameEngine {
         }
     }
 
-    public void applyPowerUp(PowerUpBall.PowerUpType type) {
+    public void applyBuff(Buff.BuffType type) {
         if (balls.isEmpty()) return;
 
-        if (type == PowerUpBall.PowerUpType.Split_Ball) {
+        if (type == Buff.BuffType.Split_Ball) {
             ArrayList<Ball> newballs = new ArrayList<>(balls);
             for (Ball newball : newballs) {
                 if (newball.isLaunched() && newballs.size() < Max_Ball - 1) {
                     splitBall(newball);
                 }
             }
-        } else if (type == PowerUpBall.PowerUpType.Heart_Ball) {
+        } else if (type == Buff.BuffType.Heart_Ball) {
             lives ++;
         } else {
-            balls.forEach(ball -> ball.getPowerUps().put(type, 5.0));
+            balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
     }
 
