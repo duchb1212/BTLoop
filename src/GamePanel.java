@@ -31,7 +31,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         // Nhạc nền
         SoundManager.playBackgroundMusic(
-                "C:/Users/DLC/OneDrive/Documents/GitHub/BTLoop-main/BTLoop-main/src/sounds/Music.wav"
+                "src/sounds/Music.wav"
         );
     }
 

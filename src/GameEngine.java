@@ -34,6 +34,15 @@ public class GameEngine {
     private static final double PUSH_OUT = 0.5;
     private static final double LARGE_PUSH = 3.0;
 
+    int brickWidth = 60;
+    private int brickHeight = 20;
+    private int brickPadding = 5;
+    private int offSetX = 35;
+    private int offSetY = 50;
+
+    private LevelLoader levelLoader = new LevelLoader(brickWidth, brickHeight, brickPadding, offSetX, offSetY, screenWidth, screenHeight);
+    private int currentLevel = 1;
+
     public GameEngine(int screenWidth, int screenHeight) {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
@@ -170,31 +179,12 @@ public class GameEngine {
 
     private void createBricks() {
         bricks.clear();
-
-        int brickWidth = 60;
-        int brickHeight = 20;
-        int brickPadding = 5;
-        int offSetX = 35;
-        int offSetY = 50;
-
-        int rows = 5;
-        int cols = 10;
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                int x = offSetX + j * (brickWidth + brickPadding);
-                int y = offSetY + i * (brickHeight + brickPadding);
-
-                if (i == 0 || i == 1) {
-                    // Strong brick typically with 3 HP
-                    BrickFactory factory = new StrongBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                } else {
-                    // Normal brick typically with 1 HP
-                    BrickFactory factory = new NormalBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                }
-            }
+        String levelPath = LevelLoader.getLevelName(currentLevel);
+        ArrayList<Brick> loadedBricks = levelLoader.loadLevel(levelPath);
+        if (loadedBricks != null) {
+            bricks = loadedBricks;
+        }else {
+            System.err.println("Error loading level: " + levelPath);
         }
     }
 
@@ -221,10 +211,10 @@ public class GameEngine {
         } else {
             paddle.setWidth(100);
             paddle.minimize();
-        }    
+        }
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, allObjects);
-        for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
+        for (Iterator<GameObject> it = buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
             // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
             if (obj instanceof Buff pup) {
@@ -247,7 +237,7 @@ public class GameEngine {
             }
         }
 
-            // Update ball using swept-AABB movement against allObjects
+        // Update ball using swept-AABB movement against allObjects
         // Update all balls
         for (Iterator<Ball> it = balls.iterator(); it.hasNext(); ) {
             Ball ball = it.next();
@@ -375,7 +365,7 @@ public class GameEngine {
                 }
             }
         } else if (type == Buff.BuffType.Heart_Ball) {
-            lives ++;
+            lives++;
         } else {
             balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
@@ -389,8 +379,8 @@ public class GameEngine {
         double a1 = angle + Math.toRadians(25);
         double a2 = angle - Math.toRadians(25);
 
-        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a1), speed*Math.sin(a1));
-        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a2), speed*Math.sin(a2));
+        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a1), speed * Math.sin(a1));
+        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a2), speed * Math.sin(a2));
 
         balls.add(b1);
         if (balls.size() < Max_Ball) balls.add(b2);
@@ -400,7 +390,7 @@ public class GameEngine {
         balls.clear();
         int ballSize = 15;
         int ballX = (int) (paddle.getPosX() + (paddle.getWidth() / 2));
-        int ballY =(int)  (paddle.getPosY() - paddle.getHeight());
+        int ballY = (int) (paddle.getPosY() - paddle.getHeight());
         Ball newball = new Ball(ballX, ballY, ballSize, ballSize, 300.0, -1.0, -1.0, screenWidth, screenHeight);
         newball.setLaunched(false);
         balls.add(newball);
@@ -419,5 +409,18 @@ public class GameEngine {
 
     public void togglePaused() {
         paused = !paused;
+    }
+
+    public void nextLevel() {
+        currentLevel++;
+        String nextLevelPath = LevelLoader.getLevelName(currentLevel);
+        if (!XMLHandler.exists(nextLevelPath)) {
+            gameWon = true;
+            System.out.println("All levels completed!");
+            return;
+        }
+
+        createBricks();
+        resetBall();
     }
 }
