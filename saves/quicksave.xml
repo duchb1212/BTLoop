@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<BTLoopSave date="2025-11-11 09:52:01" timestamp="1762829521390" version="1.0">
+    <score>40</score>
+    <lives>2</lives>
+    <gameOver>false</gameOver>
+    <gameWon>false</gameWon>
+    <paused>false</paused>
+    <Paddle>
+        <posX>223.33333333333306</posX>
+        <posY>550.0</posY>
+        <width>100.0</width>
+        <height>20.0</height>
+        <speed>400.0</speed>
+    </Paddle>
+    <Balls>
+        <Ball height="15.0" launched="false" posX="265.83333333333303" posY="535.0" speed="300.0" width="15.0"/>
+    </Balls>
+    <Bricks>
+        <Brick height="20.0" hitPoints="3" posX="35.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="100.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="165.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="230.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="295.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="360.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="425.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="490.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="555.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="620.0" posY="50.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="35.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="100.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="165.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="230.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="295.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="360.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="425.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="490.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="555.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="3" posX="620.0" posY="75.0" type="strong" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="35.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="100.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="165.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="230.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="295.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="360.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="425.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="490.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="555.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="620.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="35.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="100.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="165.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="230.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="295.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="360.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="425.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="490.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="620.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="35.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="100.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="165.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="295.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="360.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="425.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="620.0" posY="150.0" type="normal" width="60.0"/>
+    </Bricks>
+    <Buffs/>
+</BTLoopSave>
