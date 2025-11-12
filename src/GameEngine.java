@@ -24,8 +24,18 @@ public class GameEngine {
     private boolean gameWon;
     private boolean paused;
     private final int Max_Ball = 6;
+
+    int brickWidth = 60;
+    int brickHeight = 20;
+    int brickPadding = 5;
+    int offSetX = 35;
+    int offSetY = 50;
+
     private int screenWidth;
     private int screenHeight;
+
+    private LevelLoader levelLoader = new LevelLoader(brickWidth,brickHeight,brickPadding,offSetX,offSetY,screenWidth,screenHeight);
+    private int currentLevel =1;
 
     private static final int initialLives = 3;
     private static final int pointNormalBricks = 10;
@@ -171,30 +181,14 @@ public class GameEngine {
     private void createBricks() {
         bricks.clear();
 
-        int brickWidth = 60;
-        int brickHeight = 20;
-        int brickPadding = 5;
-        int offSetX = 35;
-        int offSetY = 50;
+        // Load level from XML file
+        String levelPath = LevelLoader.getLevelName(currentLevel);
+        ArrayList<Brick> loadedBricks = levelLoader.loadLevel(levelPath);
 
-        int rows = 5;
-        int cols = 10;
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                int x = offSetX + j * (brickWidth + brickPadding);
-                int y = offSetY + i * (brickHeight + brickPadding);
-
-                if (i == 0 || i == 1) {
-                    // Strong brick typically with 3 HP
-                    BrickFactory factory = new StrongBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                } else {
-                    // Normal brick typically with 1 HP
-                    BrickFactory factory = new NormalBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                }
-            }
+        if (loadedBricks != null) {
+            bricks = loadedBricks;
+        } else {
+            System.err.println("Error loading level " + levelPath);
         }
     }
 
@@ -211,7 +205,7 @@ public class GameEngine {
         } else {
             paddle.setWidth(100);
             paddle.minimize();
-        }    
+        }
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, new ArrayList<>());
         for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
@@ -419,11 +413,22 @@ public class GameEngine {
         return true;
     }
 
-    public void restart() {
+        public void restart() {
         initGame();
     }
 
     public void togglePaused() {
         paused = !paused;
+    }
+    public void nextLevel() {
+        currentLevel++;
+        String nextLevelPath = LevelLoader.getLevelName(currentLevel);
+        if (!XMLHandler.exists(nextLevelPath)) {
+            gameWon = true;
+            System.out.println(" All levels completed!");
+            return;
+        }
+        createBricks();
+        resetBall();
     }
 }

@@ -152,7 +152,7 @@ public class Ball extends MovableObject {
                 if (other instanceof Buff) continue;
                 if (other instanceof Brick) {
                     if (((Brick)other).isDestroyed()) continue;
-                    if (this.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                    if (this.getBuffs().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
                         continue;
                     }
                 } 
