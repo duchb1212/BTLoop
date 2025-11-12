@@ -272,7 +272,7 @@ public class GameEngine {
             }
 
             // Brick discrete collision fallback
-            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+            if (ball.getBuffs().containsKey(Buff.BuffType.Fire_Ball)) {
                 for (Brick brick : bricks) {
                     if (brick.isDestroyed()) continue;
 
@@ -293,7 +293,7 @@ public class GameEngine {
 
             // Check if ball fell below screen
             if (ball.checkWallCollision()) {
-                it.remove():
+                it.remove();
             }
         }
 
