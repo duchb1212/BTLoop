@@ -23,7 +23,7 @@ public class IceBrick extends Brick {
             // Load texture image từ thư mục resources
             URL imageUrl = getClass().getResource("/textures/WhiteBrick.png");
             if (imageUrl == null) {
-                System.err.println("⚠️ Không tìm thấy ảnh WhiteBrick.png!");
+                System.err.println("Không tìm thấy ảnh WhiteBrick.png!");
             } else {
                 texture = ImageIO.read(imageUrl);
             }

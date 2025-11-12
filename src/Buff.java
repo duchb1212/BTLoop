@@ -1,4 +1,7 @@
 import java.util.ArrayList;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.io.IOException;
 
 public class Buff extends MovableObject {
     private double speed;    // Tốc độ cơ bản (ví dụ: 300 pixel/giây)
@@ -9,13 +12,31 @@ public class Buff extends MovableObject {
     private boolean markedForRemoval = false;
 
     public enum BuffType {
-        Normal_Ball,
-        Fire_Ball,
-        Enlarged_Ball,
-        Split_Ball,
-        Gun_Ball,
-        Heart_Ball,
-        EnlargedPaddle_Ball;
+        Normal_Ball(null),
+        Fire_Ball("textures/Fire_Buff.png"),
+        Enlarged_Ball("textures/Enlarged_Buff.png"),
+        Split_Ball("textures/Split_Buff.png"),
+        Heart_Ball("textures/Heart_Buff.png"),
+        EnlargedPaddle_Ball("textures/Enlarged_Paddle_Buff.png");
+
+        private final String texturePath;
+        private Image texture;
+
+        BuffType(String texturePath) {
+            this.texturePath = texturePath;
+        }
+
+        public Image getTexture() {
+            if (texturePath == null) return null;
+            if (texture == null) {
+                try {
+                    texture = ImageIO.read(getClass().getClassLoader().getResource(texturePath));
+                } catch (IOException | IllegalArgumentException e) {
+                    System.err.println("Không thể load texture: " + texturePath);
+                }
+            }
+            return texture;
+        }
     }
     private BuffType buff;
 

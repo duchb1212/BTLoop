@@ -41,7 +41,7 @@ public class SaveManager {
             saveBricks(doc, root, engine.getBricks());
 
             // Save power-ups (if any are active)
-            savePowerUps(doc, root, engine.getPowerUps());
+            saveBuffs(doc, root, engine.getBuffs());
 
             // Write to file
             boolean success = XMLHandler.write(filePath, doc);
@@ -101,8 +101,8 @@ public class SaveManager {
             engine.setBricks(bricks);
 
             // Load power-ups
-            ArrayList<GameObject> powerUps = loadPowerUps(root);
-            engine.setPowerUps(powerUps);
+            ArrayList<GameObject> buffs = loadBuffs(root);
+            engine.setBuffs(buffs);
 
             System.out.println("Game loaded from: " + filePath);
             return true;
@@ -305,29 +305,29 @@ public class SaveManager {
         return bricks;
     }
 
-    private static void savePowerUps(Document doc, Element root, ArrayList<GameObject> powerUps) {
-        Element powerUpsEl = doc.createElement("PowerUps");
+    private static void saveBuffs(Document doc, Element root, ArrayList<GameObject> buffs) {
+        Element buffsEl = doc.createElement("Buffs");
 
-        for (GameObject powerUp : powerUps) {
-            if (powerUp instanceof Buff) {
-                Buff pup = (Buff) powerUp;
+        for (GameObject buff : buffs) {
+            if (buff instanceof Buff) {
+                Buff pup = (Buff) buff;
                 Map<String, String> attrs = new HashMap<>();
                 attrs.put("type", pup.getBuffType().toString());
                 attrs.put("posX", String.valueOf(pup.getPosX()));
                 attrs.put("posY", String.valueOf(pup.getPosY()));
                 attrs.put("width", String.valueOf(pup.getWidth()));
                 attrs.put("height", String.valueOf(pup.getHeight()));
-                XMLHandler.addElementWithAttributes(doc, powerUpsEl, "PowerUp", attrs);
+                XMLHandler.addElementWithAttributes(doc, buffsEl, "Buff", attrs);
             }
         }
 
-        root.appendChild(powerUpsEl);
+        root.appendChild(buffsEl);
     }
 
-    private static ArrayList<GameObject> loadPowerUps(Element root) {
-        ArrayList<GameObject> powerUps = new ArrayList<>();
+    private static ArrayList<GameObject> loadBuffs(Element root) {
+        ArrayList<GameObject> buffs = new ArrayList<>();
         // Power-ups are dynamic and may not need to be saved/loaded
         // This is a placeholder for future implementation
-        return powerUps;
+        return buffs;
     }
 }

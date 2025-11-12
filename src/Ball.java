@@ -21,10 +21,15 @@ public class Ball extends MovableObject {
     public CollisionResult lastCollision = null;
     private HashMap<Buff.BuffType, Double> buffs ;
     private boolean isLaunched = false;
+    private int damage = 1;
 
     // Lưu trữ kích thước màn hình để kiểm tra va chạm tường
     private int screenWidth;
     private int screenHeight;
+
+    private final double baseWidth = 25;
+    private final double baseHeight = 25;
+
 
     private static final double EPS = 1e-8;
     private static final double PUSH_OUT = 3.0;
@@ -67,11 +72,19 @@ public class Ball extends MovableObject {
         this.velY = this.speed * this.dirY;
     }
 
+    public int getDamage() {
+        return damage;
+    }
+
+    public void setDamage(int damage) {
+        this.damage = damage;
+    }
+
     public HashMap<Buff.BuffType, Double> getBuffs() {
         return buffs;
     }
 
-    public void setBuffs(HashMap<Buff.BuffType, Double> powerUps) {
+    public void setBuffs(HashMap<Buff.BuffType, Double> buffs) {
         this.buffs = buffs;
     }
 
@@ -133,14 +146,6 @@ public class Ball extends MovableObject {
         // Giới hạn số lần lặp xử lý va chạm trong 1 frame để tránh vòng lặp vô hạn.
         int maxIterations = 5;
 
-        if (this.buffs.containsKey(Buff.BuffType.Enlarged_Ball)) {
-            this.width = 30.0;
-            this.height = 30.0;
-        } else {
-            this.width = 15.0;
-            this.height = 15.0;
-        }
-
         for (int iter = 0; iter < maxIterations && remainingTime > EPS; iter++) {
             double moveX = this.velX * deltaTime * remainingTime;
             double moveY = this.velY * deltaTime * remainingTime;
@@ -150,12 +155,11 @@ public class Ball extends MovableObject {
             for (GameObject other : allObjects) {
                 if (other instanceof Ball) continue;
                 if (other instanceof Buff) continue;
+                if (other instanceof Paddle) continue;
                 if (other instanceof Brick) {
-                    if (((Brick)other).isDestroyed()) continue;
-                    if (this.getBuffs().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
-                        continue;
-                    }
-                } 
+                    if (!((Brick) other).isDestroyed()) continue;
+                    if (this.buffs.containsKey(Buff.BuffType.Fire_Ball)) continue;
+                }
 
                 CollisionResult currentCollision = CollisionUtils.sweptAABB(this, other, moveX, moveY);
                 if (currentCollision != null && currentCollision.t < bestCollision.t) {
@@ -267,7 +271,7 @@ public class Ball extends MovableObject {
         double s = this.getSpeed();
         this.setVelX(s * dirX);
         this.setVelY(s * dirY);
-        this.isLaunched = true;    
+        this.isLaunched = true;
     }
 
     public void setVelocity(double velX, double velY) {
@@ -279,5 +283,11 @@ public class Ball extends MovableObject {
             this.dirY = velY / len;
             this.speed = len;
         }
+    }
+
+    public void incrementEnlarged() {
+        this.width += 10;
+        this.height += 10;
+        this.damage ++;
     }
 }

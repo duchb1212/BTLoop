@@ -1,20 +1,31 @@
-import javafx.application.Platform;
-
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.IOException;
 
+/**
+ * GamePanel: UI layer, handles input, ticking and rendering.
+ * Adjusted to match updated APIs (camelCase method names, updated brick types).
+ */
 public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private GameEngine gameEngine;
     private Renderer renderer;
     private Timer timer;
+    private PauseOverLay pauseOverlay;
+    private boolean isPaused = false;
+    private Image backgroundTexture;
+
     private boolean pressedLeft = false;
     private boolean pressedRight = false;
+    private GameEngine engine;
 
-    // Overlay cho màn Pause
-    private PauseOverlayPanel pauseOverlay;
+    public GameEngine getEngine() {
+        return gameEngine;
+    }
+
 
     public GamePanel(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -22,44 +33,45 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
 
+        // Load background texture
+        try {
+            backgroundTexture = ImageIO.read(getClass().getClassLoader()
+                    .getResource("textures/Background.jpg"));
+        } catch (IOException e) {
+            System.err.println("Không thể load background texture!");
+        }
+
         gameEngine = new GameEngine(width, height);
         renderer = new Renderer();
 
-        // 60 FPS update loop
+
+        // Pause Overlay
+        pauseOverlay = new PauseOverLay(this, gameEngine);
+        pauseOverlay.setBounds(0, 0, width, height);
+        pauseOverlay.setVisible(false);
+        setLayout(null);
+        add(pauseOverlay);
+
         timer = new Timer(1000 / 60, this);
         timer.start();
 
-        // Nhạc nền
-        SoundManager.playBackgroundMusic(
-                "src/sounds/Music.wav"
-        );
+        SoundManager.playBackgroundMusic("src/sounds/Music.wav");
+
     }
 
-    // Getter/Setter cho SaveManager
-    public GameEngine getEngine() {
-        return gameEngine;
-    }
-
-    public void setEngine(GameEngine engineLoaded) {
-        this.gameEngine = engineLoaded;
-    }
-
-    // Pause overlay setter/getter
-    public void setPauseOverlay(PauseOverlayPanel overlay) {
-        if (pauseOverlay != null) {
-            this.remove(pauseOverlay); // Xoá overlay cũ nếu có
-        }
-        this.pauseOverlay = overlay;
-        if (overlay != null) {
-            this.setLayout(null); // Để overlay đặt vị trí tuyệt đối
-            overlay.setBounds(0, 0, getWidth(), getHeight());
-            this.add(overlay);
-            this.setComponentZOrder(overlay, 0); // Đảm bảo overlay ở trên
-            overlay.requestFocusInWindow();
-        }
+    public void togglePause() {
+        isPaused = !isPaused;
+        gameEngine.setPaused(isPaused);
+        pauseOverlay.setVisible(isPaused);
         repaint();
     }
-    public PauseOverlayPanel getPauseOverlay() { return pauseOverlay; }
+
+    public void hidePauseOverlay() {
+        isPaused = false;
+        gameEngine.setPaused(false);
+        pauseOverlay.setVisible(false);
+        repaint();
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -68,53 +80,72 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Paddle
-        renderer.render(g, gameEngine.getPaddle(), Color.BLUE);
+        // --- Render background ---
+        if (backgroundTexture != null) {
+            g2d.drawImage(backgroundTexture, 0, 0, getWidth(), getHeight(), null);
+        } else {
+            g2d.setColor(Color.RED); // fallback nếu texture không load được
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
 
-        // Balls
+        // Render paddle
+        var paddle = gameEngine.getPaddle();
+        if (paddle.getTexture() != null) {
+            g2d.drawImage(
+                    paddle.getTexture(),
+                    (int) paddle.getPosX(),
+                    (int) paddle.getPosY(),
+                    (int) paddle.getWidth(),
+                    (int) paddle.getHeight(),
+                    null
+            );
+        }
+
+        // Render ball
         for (var ball : gameEngine.getBalls()) {
             if (ball.getTexture() != null) {
-                g2d.drawImage(ball.getTexture(),
+                g2d.drawImage(
+                        ball.getTexture(),
                         (int) ball.getPosX(),
                         (int) ball.getPosY(),
                         (int) ball.getWidth(),
                         (int) ball.getHeight(),
-                        null);
+                        null
+                );
             }
         }
 
-        // Bricks
+        // Render bricks (only those not destroyed)
         for (var brick : gameEngine.getBricks()) {
             if (!brick.isDestroyed()) {
                 if (brick.getTexture() != null) {
-                    g2d.drawImage(brick.getTexture(),
+                    g2d.drawImage(
+                            brick.getTexture(),
                             (int) brick.getPosX(),
                             (int) brick.getPosY(),
                             (int) brick.getWidth(),
                             (int) brick.getHeight(),
-                            null);
+                            null
+                    );
                 }
-                renderer.render(g, brick, Color.GREEN);
             }
         }
 
-        // Power-ups
-        for (var powerball : gameEngine.getPowerUps()) {
-            Buff powerBall = (Buff) powerball;
-            Color color;
-            switch (powerBall.getBuffType()) {
-                case Fire_Ball -> color = new Color(255, 60, 60);
-                case Enlarged_Ball -> color = Color.WHITE;
-                case Split_Ball -> color = new Color(255, 0, 255);
-                case Heart_Ball -> color = new Color(255, 0, 150);
-                default -> color = Color.YELLOW;
+        for (var powerball : gameEngine.getBuffs()) {
+            if (powerball instanceof Buff buff) {
+                Image tex = buff.getBuffType().getTexture();
+                if (tex != null) {
+                    g.drawImage(tex,
+                            (int) buff.getPosX(),
+                            (int) buff.getPosY(),
+                            (int) buff.getWidth(),
+                            (int) buff.getHeight(),
+                            null);
+                }
             }
-            renderer.render(g, powerball, color);
         }
 
         renderUI(g);
-
-        // Không cần tự vẽ overlay nữa!
     }
 
     private void renderUI(Graphics g) {
@@ -126,73 +157,123 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         int lineHeight = 50;
         if (gameEngine.isGameOver()) {
-            drawCenteredText(g, "Game Over", lineHeight);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String gameOver = "Game Over";
+            int textWidth = g.getFontMetrics().stringWidth(gameOver);
+            g.drawString(gameOver, (getWidth() - textWidth) / 2, getHeight() / 2);
+
+            String restartGame = "Press R to restart";
+            int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
+            g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
         } else if (gameEngine.isGameWon()) {
-            drawCenteredText(g, "Game Won", lineHeight);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String gameWon = "Game Won";
+            int textWidth = g.getFontMetrics().stringWidth(gameWon);
+            g.drawString(gameWon, (getWidth() - textWidth) / 2, getHeight() / 2);
+
+            String restartGame = "Press R to restart";
+            int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
+            g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
         }
     }
 
-    private void drawCenteredText(Graphics g, String mainText, int lineHeight) {
-        g.setFont(new Font("Arial", Font.BOLD, 48));
-        int textWidth = g.getFontMetrics().stringWidth(mainText);
-        g.drawString(mainText, (getWidth() - textWidth) / 2, getHeight() / 2);
-
-        String restartGame = "Press R to restart";
-        int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
-        g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
+    public void setEngine(GameEngine engine) {
+        this.engine = engine;
     }
+
 
     @Override
     public void actionPerformed(java.awt.event.ActionEvent e) {
-        if (!gameEngine.isPaused()) {
-            if (pressedLeft && !pressedRight) {
-                gameEngine.getPaddle().moveLeft();
-            } else if (pressedRight && !pressedLeft) {
-                gameEngine.getPaddle().moveRight();
-            } else {
-                gameEngine.getPaddle().stop();
-            }
-            gameEngine.update(1.0 / 60.0);
+        if (pressedLeft && !pressedRight) {
+            gameEngine.getPaddle().moveLeft();
+        } else if (pressedRight && !pressedLeft) {
+            gameEngine.getPaddle().moveRight();
+        } else {
+            gameEngine.getPaddle().stop();
         }
+        // Pass deltaTime as a fixed timestep (1/60s) to engine update for consistency.
+        gameEngine.update(1.0 / 60.0);
         repaint();
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-
-        if (key == KeyEvent.VK_SPACE && !gameEngine.getBalls().get(0).isLaunched()) {
-            gameEngine.getBalls().get(0).launch(0.2, -1.0);
-        }
-
-        if (key == KeyEvent.VK_ESCAPE) {
-            if (!gameEngine.isPaused()) {
-                gameEngine.togglePaused();
-                setPauseOverlay(new PauseOverlayPanel(this, gameEngine));
+        if (key == KeyEvent.VK_SPACE) {
+            if (!gameEngine.getBalls().get(0).isLaunched()) {
+                // initial launch direction: slightly to the right and upward
+                gameEngine.getBalls().get(0).launch(0.2, -1.0);
             }
         }
-
-        // Di chuyển
-        if (key == KeyEvent.VK_LEFT) pressedLeft = true;
-        if (key == KeyEvent.VK_RIGHT) pressedRight = true;
-
-        // Restart khi thua/thắng
-        if (key == KeyEvent.VK_R && (gameEngine.isGameOver() || gameEngine.isGameWon())) {
-            gameEngine.restart();
+        if (key == KeyEvent.VK_ESCAPE) {
+            togglePause();
         }
 
-        // Quick save/load
-        if (key == KeyEvent.VK_F5) SaveManager.quickSave(gameEngine);
-        if (key == KeyEvent.VK_F9) SaveManager.quickLoad(gameEngine, getWidth(), getHeight());
+        if (key == KeyEvent.VK_LEFT) {
+            pressedLeft = true;
+        }
+        if (key == KeyEvent.VK_RIGHT) {
+            pressedRight = true;
+        }
+        if (key == KeyEvent.VK_P) {
+            gameEngine.togglePaused();
+        }
+        if (key == KeyEvent.VK_R) {
+            if (gameEngine.isGameOver() || gameEngine.isGameWon()) {
+                gameEngine.restart();
+            }
+        }
+        // Quick Save - F5
+        else if (key == KeyEvent.VK_F5) {
+            if (SaveManager.quickSave(gameEngine)) {
+                System.out.println("✓ Quick Save successful!");
+            } else {
+                System.out.println("✗ Quick Save failed!");
+            }
+        }
+        // Quick Load - F9
+        else if (key == KeyEvent.VK_F9) {
+            if (SaveManager.quickLoad(gameEngine, getWidth(), getHeight())) {
+                System.out.println("✓ Quick Load successful!");
+            } else {
+                System.out.println("✗ Quick Load failed!");
+            }
+        }
+        // Save to slot 1-9 - Ctrl+1 through Ctrl+9
+        else if (e.isControlDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
+            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            if (SaveManager.saveToSlot(slot, gameEngine)) {
+                System.out.println("✓ Saved to slot " + slot);
+            } else {
+                System.out.println("✗ Failed to save to slot " + slot);
+            }
+        }
+        // Load from slot 1-9 - Alt+1 through Alt+9
+        else if (e.isAltDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
+            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            if (SaveManager.loadFromSlot(slot, gameEngine, getWidth(), getHeight())) {
+                System.out.println("✓ Loaded from slot " + slot);
+            } else {
+                System.out.println("✗ Failed to load from slot " + slot);
+            }
+        }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_LEFT) pressedLeft = false;
-        if (key == KeyEvent.VK_RIGHT) pressedRight = false;
+        if (key == KeyEvent.VK_LEFT) {
+            pressedLeft = false;
+        }
+        if (key == KeyEvent.VK_RIGHT) {
+            pressedRight = false;
+        }
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {}
+    public void keyTyped(KeyEvent e) {
+    }
+
+    public void setPauseOverlay(Object o) {
+    }
 }

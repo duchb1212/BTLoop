@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<BTLoopSave date="2025-11-12 07:16:53" timestamp="1762906613751" version="1.0">
-    <score>30</score>
+<BTLoopSave date="2025-11-12 20:14:16" timestamp="1762953256395" version="1.0">
+    <score>10</score>
     <lives>3</lives>
     <gameOver>false</gameOver>
     <gameWon>false</gameWon>
-    <paused>false</paused>
+    <paused>true</paused>
     <Paddle>
-        <posX>269.9999999999998</posX>
+        <posX>443.3333333333336</posX>
         <posY>550.0</posY>
         <width>100.0</width>
         <height>20.0</height>
         <speed>400.0</speed>
     </Paddle>
     <Balls>
-        <Ball height="15.0" launched="true" posX="172.0" posY="395.80178313809773" speed="300.0" width="15.0"/>
+        <Ball height="25.0" launched="true" posX="631.398611176432" posY="408.81243773451376" speed="300.0" width="25.0"/>
     </Balls>
     <Bricks>
         <Brick height="20.0" hitPoints="3" posX="35.0" posY="50.0" type="strong" width="60.0"/>
@@ -43,6 +43,7 @@
         <Brick height="20.0" hitPoints="1" posX="295.0" posY="100.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="360.0" posY="100.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="425.0" posY="100.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="490.0" posY="100.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="555.0" posY="100.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="620.0" posY="100.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="35.0" posY="125.0" type="normal" width="60.0"/>
@@ -50,20 +51,22 @@
         <Brick height="20.0" hitPoints="1" posX="165.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="230.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="295.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="360.0" posY="125.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="425.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="490.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="555.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="620.0" posY="125.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="35.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="100.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="165.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="230.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="295.0" posY="150.0" type="normal" width="60.0"/>
+        <Brick height="20.0" hitPoints="1" posX="360.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="490.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="555.0" posY="150.0" type="normal" width="60.0"/>
         <Brick height="20.0" hitPoints="1" posX="620.0" posY="150.0" type="normal" width="60.0"/>
     </Bricks>
-    <PowerUps>
-        <PowerUp height="10.0" posX="255.0" posY="672.5" type="Heart_Ball" width="10.0"/>
-        <PowerUp height="10.0" posX="385.0" posY="270.0" type="Heart_Ball" width="10.0"/>
-        <PowerUp height="10.0" posX="450.0" posY="287.5" type="Gun_Ball" width="10.0"/>
-    </PowerUps>
+    <Buffs>
+        <Buff height="20.0" posX="450.0" posY="435.0" type="Normal_Ball" width="20.0"/>
+    </Buffs>
 </BTLoopSave>
