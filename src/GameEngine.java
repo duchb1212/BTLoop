@@ -316,7 +316,12 @@ public class GameEngine {
         if (brick.isDestroyed()) {
             return;
         }
-        boolean destroyed = brick.takeDamage(1);
+        boolean destroyed;
+        if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.Enlarged_Ball)) {
+            destroyed = brick.takeDamage(5);
+        } else {
+            destroyed = brick.takeDamage(1);
+        }
         if (destroyed) {
             GameObject spawn = brick.onDestroyed();
             if (spawn != null) {
