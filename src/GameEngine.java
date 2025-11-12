@@ -257,6 +257,11 @@ public class GameEngine {
             CollisionResult c = ball.lastCollision;
             if (c != null && c.targetObject instanceof Brick brick) {
                 processBrickHit(brick);
+                if (brick instanceof IceBrick) {
+                    if (ball.getBuffs().containsKey(Buff.BuffType.Fire_Ball)) {
+                        ball.getBuffs().remove(Buff.BuffType.Fire_Ball);
+                    }
+                }
             }
             ball.lastCollision = null;
 
