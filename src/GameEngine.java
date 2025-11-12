@@ -24,8 +24,18 @@ public class GameEngine {
     private boolean gameWon;
     private boolean paused;
     private final int Max_Ball = 6;
+
+    int brickWidth = 60;
+    int brickHeight = 20;
+    int brickPadding = 5;
+    int offSetX = 35;
+    int offSetY = 50;
+
     private int screenWidth;
     private int screenHeight;
+
+    private LevelLoader levelLoader = new LevelLoader(brickWidth,brickHeight,brickPadding,offSetX,offSetY,screenWidth,screenHeight);
+    private int currentLevel =1;
 
     private static final int initialLives = 3;
     private static final int pointNormalBricks = 10;
@@ -147,7 +157,7 @@ public class GameEngine {
         this.paddle = new Paddle(paddleX, paddleY, paddleWidth, paddleHeight, 0.0, 0.0, paddleSpeed, screenWidth);
 
         // Create Ball.
-        int ballSize = 25;
+        int ballSize = 15;
         int ballX = (screenWidth - ballSize) / 2;
         int ballY = screenHeight / 2;
         double ballSpeed = 300.0; // pixels per second (tweak)
@@ -171,30 +181,14 @@ public class GameEngine {
     private void createBricks() {
         bricks.clear();
 
-        int brickWidth = 60;
-        int brickHeight = 20;
-        int brickPadding = 5;
-        int offSetX = 35;
-        int offSetY = 50;
+        // Load level from XML file
+        String levelPath = LevelLoader.getLevelName(currentLevel);
+        ArrayList<Brick> loadedBricks = levelLoader.loadLevel(levelPath);
 
-        int rows = 5;
-        int cols = 10;
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                int x = offSetX + j * (brickWidth + brickPadding);
-                int y = offSetY + i * (brickHeight + brickPadding);
-
-                if (i == 0 || i == 1) {
-                    // Strong brick typically with 3 HP
-                    BrickFactory factory = new StrongBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                } else {
-                    // Normal brick typically with 1 HP
-                    BrickFactory factory = new NormalBrickFactory();
-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
-                }
-            }
+        if (loadedBricks != null) {
+            bricks = loadedBricks;
+        } else {
+            System.err.println("Error loading level " + levelPath);
         }
     }
 
@@ -205,19 +199,18 @@ public class GameEngine {
      */
     public void update(double deltaTime) {
         if (gameOver || gameWon || paused) return;
-
         if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.EnlargedPaddle_Ball)) {
             paddle.setWidth(200);
             paddle.enlarge();
         } else {
             paddle.setWidth(100);
             paddle.minimize();
-        }    
+        }
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, new ArrayList<>());
         for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
-            // Assume Buff extends GameObject and has update, isMarkedForRemoval(), getBuffType()
+            // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
             if (obj instanceof Buff pup) {
                 pup.update(deltaTime, new ArrayList<>());
 
@@ -234,10 +227,11 @@ public class GameEngine {
                 if (pup.isMarkedForRemoval()) {
                     it.remove();
                 }
+            } else {
             }
         }
 
-            // Update ball using swept-AABB movement against allObjects
+        // Update ball using swept-AABB movement against allObjects
         // Update all balls
         for (Iterator<Ball> it = balls.iterator(); it.hasNext(); ) {
             Ball ball = it.next();
@@ -250,16 +244,11 @@ public class GameEngine {
                 ball.setVelY(0.0);
                 continue;
             }
-
-            // Build the list of all objects for collision queries (Ball expects ArrayList<GameObject>)
             ArrayList<GameObject> allObjects = new ArrayList<>();
-
-            // Add paddle and all bricks (bricks are Brick which extends GameObject)
             allObjects.add(paddle);
             for (Brick brick : bricks) {
                 if (!brick.isDestroyed()) allObjects.add(brick);
             }
-            allObjects.addAll(buffs);
 
             // Ball in-flight
             ball.update(deltaTime, allObjects);
@@ -276,6 +265,7 @@ public class GameEngine {
                 handlePaddleCollisionArkanoid(ball, paddle);
             }
 
+            // Brick discrete collision fallback
             if (ball.getBuffs().containsKey(Buff.BuffType.Fire_Ball)) {
                 for (Brick brick : bricks) {
                     if (brick.isDestroyed()) continue;
@@ -386,11 +376,6 @@ public class GameEngine {
             }
         } else if (type == Buff.BuffType.Heart_Ball) {
             lives ++;
-        } else if (type == Buff.BuffType.Enlarged_Ball) {
-            // Tăng kích thước và sát thương của bóng mỗi khi nhận buff này
-            for (Ball ball : balls) {
-                ball.incrementEnlarged();
-            }
         } else {
             balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
@@ -434,5 +419,16 @@ public class GameEngine {
 
     public void togglePaused() {
         paused = !paused;
+    }
+    public void nextLevel() {
+        currentLevel++;
+        String nextLevelPath = LevelLoader.getLevelName(currentLevel);
+        if (!XMLHandler.exists(nextLevelPath)) {
+            gameWon = true;
+            System.out.println(" All levels completed!");
+            return;
+        }
+        createBricks();
+        resetBall();
     }
 }

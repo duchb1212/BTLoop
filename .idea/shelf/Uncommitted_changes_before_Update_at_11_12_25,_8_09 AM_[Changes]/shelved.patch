@@ -1,0 +1,169 @@
+Index: src/GameEngine.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import java.util.ArrayList;\nimport java.util.Iterator;\n\n/**\n * GameEngine orchestrates game objects and high-level game state.\n * <p>\n * Notes on compatibility with the rest of your codebase:\n * - Uses ArrayList<GameObject> everywhere to match existing signatures.\n * - Bricks are instances of Brick (NormalBrick, StrongBrick, UnbreakableBrick).\n * - Ball.update(...) performs swept-AABB based movement; GameEngine still\n * manages scoring, lives, and simple discrete collision responses for bricks/paddle\n * (since Ball does not currently apply game logic like scoring or destroying bricks).\n */\npublic class GameEngine {\n    private Paddle paddle;\n\n    private ArrayList<Brick> bricks;\n    private ArrayList<GameObject> buffs;\n    private ArrayList<Ball> balls;\n\n    private int score;\n    private int lives;\n    private boolean gameOver;\n    private boolean gameWon;\n    private boolean paused;\n    private final int Max_Ball = 6;\n    private int screenWidth;\n    private int screenHeight;\n\n    private static final int initialLives = 3;\n    private static final int pointNormalBricks = 10;\n    private static final int pointStrongBricks = 20;\n    private static final double EPS = 1e-3;\n    private static final double PUSH_OUT = 0.5;\n    private static final double LARGE_PUSH = 3.0;\n\n    public GameEngine(int screenWidth, int screenHeight) {\n        this.screenWidth = screenWidth;\n        this.screenHeight = screenHeight;\n        this.bricks = new ArrayList<>();\n        this.buffs = new ArrayList<>();\n        this.balls = new ArrayList<>();\n        initGame();\n    }\n\n    // --- Getters / setters (kept similar naming) ---\n    public Paddle getPaddle() {\n        return paddle;\n    }\n\n    public void setPaddle(Paddle paddle) {\n        this.paddle = paddle;\n    }\n\n    public ArrayList<Brick> getBricks() {\n        return bricks;\n    }\n\n    public void setBricks(ArrayList<Brick> bricks) {\n        this.bricks = bricks;\n    }\n\n    public ArrayList<GameObject> getPowerUps() {\n        return buffs;\n    }\n\n    public void setPowerUps(ArrayList<GameObject> powerUps) {\n        this.buffs = powerUps;\n    }\n\n    public ArrayList<Ball> getBalls() {\n        return balls;\n    }\n\n    public void setBalls(ArrayList<Ball> balls) {\n        this.balls = balls;\n    }\n\n    public int getScore() {\n        return score;\n    }\n\n    public void setScore(int score) {\n        this.score = score;\n    }\n\n    public int getLives() {\n        return lives;\n    }\n\n    public void setLives(int lives) {\n        this.lives = lives;\n    }\n\n    public boolean isGameOver() {\n        return gameOver;\n    }\n\n    public void setGameOver(boolean gameOver) {\n        this.gameOver = gameOver;\n    }\n\n    public boolean isGameWon() {\n        return gameWon;\n    }\n\n    public void setGameWon(boolean gameWon) {\n        this.gameWon = gameWon;\n    }\n\n    public boolean isPaused() {\n        return paused;\n    }\n\n    public void setPaused(boolean paused) {\n        this.paused = paused;\n    }\n\n    public int getScreenWidth() {\n        return screenWidth;\n    }\n\n    public void setScreenWidth(int screenWidth) {\n        this.screenWidth = screenWidth;\n    }\n\n    public int getScreenHeight() {\n        return screenHeight;\n    }\n\n    public void setScreenHeight(int screenHeight) {\n        this.screenHeight = screenHeight;\n    }\n\n    // --- Initialization ---\n\n    private void initGame() {\n        // Create Paddle.\n        int paddleWidth = 100;\n        int paddleHeight = 20;\n        int paddleX = (screenWidth - paddleWidth) / 2;\n        int paddleY = screenHeight - 50;\n        double paddleSpeed = 400.0; // pixels per second (tweak as needed)\n\n        // Paddle constructor in your code expects: (posX,posY,width,height,velX,velY,speed,screenX)\n        // We pass initial velX=0, velY=0\n        this.paddle = new Paddle(paddleX, paddleY, paddleWidth, paddleHeight, 0.0, 0.0, paddleSpeed, screenWidth);\n\n        // Create Ball.\n        int ballSize = 15;\n        int ballX = (screenWidth - ballSize) / 2;\n        int ballY = screenHeight / 2;\n        double ballSpeed = 300.0; // pixels per second (tweak)\n\n        // Ball constructor: (posX,posY,width,height,speed,dirX,dirY,screenWidth,screenHeight)\n        balls.clear();\n        Ball ball = new Ball(ballX, ballY, ballSize, ballSize, ballSpeed, -1.0, -1.0, screenWidth, screenHeight);\n        ball.setLaunched(false);\n        this.balls.add(ball);\n        // Initialize variable.\n        score = 0;\n        lives = initialLives;\n        gameOver = false;\n        gameWon = false;\n        paused = false;\n\n        createBricks();\n        buffs.clear();\n    }\n\n    private void createBricks() {\n        bricks.clear();\n\n        int brickWidth = 60;\n        int brickHeight = 20;\n        int brickPadding = 5;\n        int offSetX = 35;\n        int offSetY = 50;\n\n        int rows = 5;\n        int cols = 10;\n\n        for (int i = 0; i < rows; i++) {\n            for (int j = 0; j < cols; j++) {\n                int x = offSetX + j * (brickWidth + brickPadding);\n                int y = offSetY + i * (brickHeight + brickPadding);\n\n                if (i == 0 || i == 1) {\n                    // Strong brick typically with 3 HP\n                    BrickFactory factory = new StrongBrickFactory();\n                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));\n                } else {\n                    // Normal brick typically with 1 HP\n                    BrickFactory factory = new NormalBrickFactory();\n                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));\n                }\n            }\n        }\n    }\n\n    /**\n     * Main update called from the game loop.\n     *\n     * @param deltaTime seconds elapsed since last frame\n     */\n    public void update(double deltaTime) {\n        if (gameOver || gameWon || paused) return;\n        if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.EnlargedPaddle_Ball)) {\n            paddle.setWidth(200);\n            paddle.enlarge();\n        } else {\n            paddle.setWidth(100);\n            paddle.minimize();\n        }    \n        // Update paddle (it clamps itself inside update)\n        paddle.update(deltaTime, new ArrayList<>());\n        for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {\n            GameObject obj = it.next();\n            // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()\n            if (obj instanceof Buff pup) {\n                pup.update(deltaTime, new ArrayList<>());\n\n                // If collected by paddle\n                if (paddle.intersects(pup)) {\n                    // apply effect\n                    applyBuff(pup.getBuffType());\n                    // mark / remove\n                    it.remove();\n                    continue;\n                }\n\n                // If flagged for removal (e.g. fell below screen)\n                if (pup.isMarkedForRemoval()) {\n                    it.remove();\n                }\n            } else {\n            }\n        }\n\n            // Update ball using swept-AABB movement against allObjects\n        // Update all balls\n        for (Iterator<Ball> it = balls.iterator(); it.hasNext(); ) {\n            Ball ball = it.next();\n\n            if (!ball.isLaunched()) {\n                // Attached to paddle\n                ball.setPosX(paddle.getPosX() + (paddle.getWidth() - ball.getWidth()) / 2.0);\n                ball.setPosY(paddle.getPosY() - ball.getHeight());\n                ball.setVelX(0.0);\n                ball.setVelY(0.0);\n                continue;\n            }\n            ArrayList<GameObject> allObjects = new ArrayList<>();\n            allObjects.add(paddle);\n            for (Brick brick : bricks) {\n                if (!brick.isDestroyed()) allObjects.add(brick);\n            }\n\n            // Ball in-flight\n            ball.update(deltaTime, allObjects);\n\n            // Process swept collision with bricks\n            CollisionResult c = ball.lastCollision;\n            if (c != null && c.targetObject instanceof Brick brick) {\n                processBrickHit(brick);\n            }\n            ball.lastCollision = null;\n\n            // Paddle collision\n            if (ball.intersects(paddle)) {\n                handlePaddleCollisionArkanoid(ball, paddle);\n            }\n\n            // Brick discrete collision fallback\n            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {\n                for (Brick brick : bricks) {\n                    if (brick.isDestroyed()) continue;\n\n                    if (ball.intersects(brick)) {\n                        processBrickHit(brick);\n                    }\n                }\n            } else {\n                for (Brick brick : bricks) {\n                    if (brick.isDestroyed()) continue;\n                    if (ball.intersects(brick)) {\n                        processBrickHit(brick);\n                        ball.setVelY(-ball.getVelY());\n                        break;\n                    }\n                }\n            }\n\n            // Check if ball fell below screen\n            if (ball.checkWallCollision()) {\n                it.remove():\n            }\n        }\n\n        bricks.removeIf(Brick::isDestroyed);\n\n        if (balls.isEmpty()) {\n            lives--;\n            if (lives <= 0) gameOver = true;\n            else {\n                resetBall();\n            }\n        }\n\n        if (allBricksDestroyed()) {\n            gameWon = true;\n        }\n    }\n\n    private void processBrickHit(Brick brick) {\n\n        if (brick.isDestroyed()) {\n            return;\n        }\n        boolean destroyed = brick.takeDamage(1);\n        if (destroyed) {\n            GameObject spawn = brick.onDestroyed();\n            if (spawn != null) {\n                buffs.add(spawn);\n            }\n            SoundManager.playSoundEffect(\"src/sounds/Brick Sound.wav\");\n            score += (brick instanceof NormalBrick) ? pointNormalBricks : pointStrongBricks;\n        }\n    }\n\n private void handlePaddleCollisionArkanoid(Ball ball, Paddle paddle) {\n\n        double overlapX = Math.max(0.0,\n                Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())\n                        - Math.max(ball.getPosX(), paddle.getPosX()));\n        double overlapY = Math.max(0.0,\n                Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())\n                        - Math.max(ball.getPosY(), paddle.getPosY()));\n\n\n\n        if (overlapX < overlapY && overlapX < 8) {\n\n            ball.setVelX(-ball.getVelX());\n            ball.setVelY(-Math.abs(ball.getVelY()));\n            if (ball.centerX() < paddle.centerX()) {\n                ball.setPosX(paddle.getPosX() - ball.getWidth() - LARGE_PUSH);\n            } else {\n                ball.setPosX(paddle.getPosX() + paddle.getWidth() + LARGE_PUSH);\n            }\n\n            ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);\n            return;\n        }\n\n\n        double hitPos = (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5);\n        hitPos = Math.max(-1.0, Math.min(1.0, hitPos));\n\n\n        double angleDegrees = 90.0 - (hitPos * 60.0);\n        double angleRadians = Math.toRadians(angleDegrees);\n\n        double speed = ball.getSpeed();\n        double newVelX = speed * Math.cos(angleRadians);\n        double newVelY = -speed * Math.sin(angleRadians);\n\n\n        ball.setVelocity(newVelX, newVelY);\n        ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);\n    }\n\n    public void applyBuff(Buff.BuffType type) {\n        if (balls.isEmpty()) return;\n\n        if (type == Buff.BuffType.Split_Ball) {\n            ArrayList<Ball> newballs = new ArrayList<>(balls);\n            for (Ball newball : newballs) {\n                if (newball.isLaunched() && newballs.size() < Max_Ball - 1) {\n                    splitBall(newball);\n                }\n            }\n        } else if (type == Buff.BuffType.Heart_Ball) {\n            lives ++;\n        } else {\n            balls.forEach(ball -> ball.getBuffs().put(type, 5.0));\n        }\n    }\n\n    public void splitBall(Ball origin) {\n        if (balls.size() >= Max_Ball - 1) return;\n        double speed = origin.getSpeed();\n        double angle = Math.atan2(origin.getVelY(), origin.getVelX()); // current angle\n        // create two new directions +/- 25 degrees\n        double a1 = angle + Math.toRadians(25);\n        double a2 = angle - Math.toRadians(25);\n\n        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a1), speed*Math.sin(a1));\n        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a2), speed*Math.sin(a2));\n\n        balls.add(b1);\n        if (balls.size() < Max_Ball) balls.add(b2);\n    }\n\n    public void resetBall() {\n        balls.clear();\n        int ballSize = 15;\n        int ballX = (int) (paddle.getPosX() + (paddle.getWidth() / 2));\n        int ballY =(int)  (paddle.getPosY() - paddle.getHeight());\n        Ball newball = new Ball(ballX, ballY, ballSize, ballSize, 300.0, -1.0, -1.0, screenWidth, screenHeight);\n        newball.setLaunched(false);\n        balls.add(newball);\n    }\n\n    private boolean allBricksDestroyed() {\n        for (Brick brick : bricks) {\n            if (!brick.isDestroyed()) return false;\n        }\n        return true;\n    }\n\n    public void restart() {\n        initGame();\n    }\n\n    public void togglePaused() {\n        paused = !paused;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/GameEngine.java b/src/GameEngine.java
+--- a/src/GameEngine.java	(revision d0834c703a7584d4ee29b5e1d08b0a6487544bbf)
++++ b/src/GameEngine.java	(date 1762909795508)
+@@ -24,9 +24,19 @@
+     private boolean gameWon;
+     private boolean paused;
+     private final int Max_Ball = 6;
++
++    int brickWidth = 60;
++    int brickHeight = 20;
++    int brickPadding = 5;
++    int offSetX = 35;
++    int offSetY = 50;
++
+     private int screenWidth;
+     private int screenHeight;
+ 
++    private LevelLoader levelLoader = new LevelLoader(brickWidth,brickHeight,brickPadding,offSetX,offSetY,screenWidth,screenHeight);
++    private int currentLevel =1;
++
+     private static final int initialLives = 3;
+     private static final int pointNormalBricks = 10;
+     private static final int pointStrongBricks = 20;
+@@ -171,30 +181,14 @@
+     private void createBricks() {
+         bricks.clear();
+ 
+-        int brickWidth = 60;
+-        int brickHeight = 20;
+-        int brickPadding = 5;
+-        int offSetX = 35;
+-        int offSetY = 50;
+-
+-        int rows = 5;
+-        int cols = 10;
++        // Load level from XML file
++        String levelPath = LevelLoader.getLevelName(currentLevel);
++        ArrayList<Brick> loadedBricks = levelLoader.loadLevel(levelPath);
+ 
+-        for (int i = 0; i < rows; i++) {
+-            for (int j = 0; j < cols; j++) {
+-                int x = offSetX + j * (brickWidth + brickPadding);
+-                int y = offSetY + i * (brickHeight + brickPadding);
+-
+-                if (i == 0 || i == 1) {
+-                    // Strong brick typically with 3 HP
+-                    BrickFactory factory = new StrongBrickFactory();
+-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
+-                } else {
+-                    // Normal brick typically with 1 HP
+-                    BrickFactory factory = new NormalBrickFactory();
+-                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
+-                }
+-            }
++        if (loadedBricks != null) {
++            bricks = loadedBricks;
++        } else {
++            System.err.println("Error loading level " + levelPath);
+         }
+     }
+ 
+@@ -211,7 +205,7 @@
+         } else {
+             paddle.setWidth(100);
+             paddle.minimize();
+-        }    
++        }
+         // Update paddle (it clamps itself inside update)
+         paddle.update(deltaTime, new ArrayList<>());
+         for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
+@@ -419,7 +413,7 @@
+         return true;
+     }
+ 
+-    public void restart() {
++        public void restart() {
+         initGame();
+     }
+ 
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"ae0faab2-a005-455f-bbbc-dd93ab2806dc\" name=\"Changes\" comment=\"\">\n      <change afterPath=\"$PROJECT_DIR$/.idea/libraries/javafx_swt.xml\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/.idea/libraries/lib.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/BTLoop.iml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/BTLoop.iml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/saves/quicksave.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/saves/quicksave.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/GameEngine.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/GameEngine.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/GamePanel.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/GamePanel.java\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"Class\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;TajTales&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/duchb1212/BTLoop.git&quot;,\n    &quot;accountId&quot;: &quot;de7ab759-e756-4882-9b4b-209ecf137392&quot;\n  }\n}</component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 4\n}</component>\n  <component name=\"ProjectId\" id=\"35BPWmCKNBkG7H650v6mwkRsC7s\" />\n  <component name=\"ProjectLevelVcsManager\">\n    <ConfirmationsSetting value=\"1\" id=\"Add\" />\n  </component>\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">{\n  &quot;keyToString&quot;: {\n    &quot;Application.Main.executor&quot;: &quot;Run&quot;,\n    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\n    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,\n    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultAutoModeForALLUsers.v1&quot;: &quot;true&quot;,\n    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\n    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,\n    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,\n    &quot;last_opened_file_path&quot;: &quot;/home/ba/Downloads/Extract/javafx-sdk-25/lib/jfx.incubator.richtext.jar&quot;,\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\n    &quot;onboarding.tips.debug.path&quot;: &quot;/home/ba/IdeaProjects/BTLoop/src/Main.java&quot;,\n    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,\n    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,\n    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,\n    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\n  }\n}</component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.27397.103\" />\n        <option value=\"bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-IU-252.27397.103\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"ae0faab2-a005-455f-bbbc-dd93ab2806dc\" name=\"Changes\" comment=\"\" />\n      <created>1762580529271</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1762580529271</updated>\n      <workItem from=\"1762580530862\" duration=\"11000\" />\n      <workItem from=\"1762612424343\" duration=\"15000\" />\n      <workItem from=\"1762612476806\" duration=\"12000\" />\n      <workItem from=\"1762705318356\" duration=\"308000\" />\n      <workItem from=\"1762707265779\" duration=\"2152000\" />\n      <workItem from=\"1762860367910\" duration=\"111000\" />\n      <workItem from=\"1762860579064\" duration=\"111000\" />\n      <workItem from=\"1762904314385\" duration=\"2818000\" />\n      <workItem from=\"1762907293653\" duration=\"961000\" />\n      <workItem from=\"1762908358933\" duration=\"304000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision d0834c703a7584d4ee29b5e1d08b0a6487544bbf)
++++ b/.idea/workspace.xml	(date 1762909795590)
+@@ -4,14 +4,9 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="ae0faab2-a005-455f-bbbc-dd93ab2806dc" name="Changes" comment="">
+-      <change afterPath="$PROJECT_DIR$/.idea/libraries/javafx_swt.xml" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/.idea/libraries/lib.xml" afterDir="false" />
++    <list default="true" id="ae0faab2-a005-455f-bbbc-dd93ab2806dc" name="Changes" comment="add read levels from xml files">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/BTLoop.iml" beforeDir="false" afterPath="$PROJECT_DIR$/BTLoop.iml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/saves/quicksave.xml" beforeDir="false" afterPath="$PROJECT_DIR$/saves/quicksave.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/src/GameEngine.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/GameEngine.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/GamePanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/GamePanel.java" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -26,6 +21,19 @@
+     </option>
+   </component>
+   <component name="Git.Settings">
++    <excluded-from-favorite>
++      <branch-storage>
++        <map>
++          <entry type="LOCAL">
++            <value>
++              <list>
++                <branch-info repo="$PROJECT_DIR$" source="main" />
++              </list>
++            </value>
++          </entry>
++        </map>
++      </branch-storage>
++    </excluded-from-favorite>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+   <component name="GitHubPullRequestSearchHistory">{
+@@ -40,6 +48,9 @@
+     &quot;accountId&quot;: &quot;de7ab759-e756-4882-9b4b-209ecf137392&quot;
+   }
+ }</component>
++  <component name="ProblemsViewState">
++    <option name="selectedTabId" value="CurrentFile" />
++  </component>
+   <component name="ProjectColorInfo">{
+   &quot;associatedIndex&quot;: 4
+ }</component>
+@@ -101,11 +112,24 @@
+       <workItem from="1762860579064" duration="111000" />
+       <workItem from="1762904314385" duration="2818000" />
+       <workItem from="1762907293653" duration="961000" />
+-      <workItem from="1762908358933" duration="304000" />
++      <workItem from="1762908358933" duration="1434000" />
+     </task>
++    <task id="LOCAL-00001" summary="add read levels from xml files">
++      <option name="closed" value="true" />
++      <created>1762908787278</created>
++      <option name="number" value="00001" />
++      <option name="presentableId" value="LOCAL-00001" />
++      <option name="project" value="LOCAL" />
++      <updated>1762908787278</updated>
++    </task>
++    <option name="localTasksCounter" value="2" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+     <option name="version" value="3" />
+   </component>
++  <component name="VcsManagerConfiguration">
++    <MESSAGE value="add read levels from xml files" />
++    <option name="LAST_COMMIT_MESSAGE" value="add read levels from xml files" />
++  </component>
+ </project>
+\ No newline at end of file

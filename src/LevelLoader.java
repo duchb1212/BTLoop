@@ -74,6 +74,8 @@ public class LevelLoader {
             break;
             case 'I' : factory = new IceBrickFactory();
             break;
+            case 'B' : factory = new SuperBrickFactory();
+            break;
         }
         return factory.createBrick(x,y,brickWidth,brickHeight,screenWidth,screenHeight);
     }
