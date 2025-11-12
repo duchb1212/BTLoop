@@ -34,15 +34,6 @@ public class GameEngine {
     private static final double PUSH_OUT = 0.5;
     private static final double LARGE_PUSH = 3.0;
 
-    int brickWidth = 60;
-    private int brickHeight = 20;
-    private int brickPadding = 5;
-    private int offSetX = 35;
-    private int offSetY = 50;
-
-    private LevelLoader levelLoader = new LevelLoader(brickWidth, brickHeight, brickPadding, offSetX, offSetY, screenWidth, screenHeight);
-    private int currentLevel = 1;
-
     public GameEngine(int screenWidth, int screenHeight) {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
@@ -179,12 +170,31 @@ public class GameEngine {
 
     private void createBricks() {
         bricks.clear();
-        String levelPath = LevelLoader.getLevelName(currentLevel);
-        ArrayList<Brick> loadedBricks = levelLoader.loadLevel(levelPath);
-        if (loadedBricks != null) {
-            bricks = loadedBricks;
-        }else {
-            System.err.println("Error loading level: " + levelPath);
+
+        int brickWidth = 60;
+        int brickHeight = 20;
+        int brickPadding = 5;
+        int offSetX = 35;
+        int offSetY = 50;
+
+        int rows = 5;
+        int cols = 10;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                int x = offSetX + j * (brickWidth + brickPadding);
+                int y = offSetY + i * (brickHeight + brickPadding);
+
+                if (i == 0 || i == 1) {
+                    // Strong brick typically with 3 HP
+                    BrickFactory factory = new StrongBrickFactory();
+                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
+                } else {
+                    // Normal brick typically with 1 HP
+                    BrickFactory factory = new NormalBrickFactory();
+                    bricks.add(factory.createBrick(x, y, brickWidth, brickHeight, screenWidth, screenHeight));
+                }
+            }
         }
     }
 
@@ -195,30 +205,20 @@ public class GameEngine {
      */
     public void update(double deltaTime) {
         if (gameOver || gameWon || paused) return;
-
-        // Build the list of all objects for collision queries (Ball expects ArrayList<GameObject>)
-        ArrayList<GameObject> allObjects = new ArrayList<>();
-
-        // Add paddle and all bricks (bricks are Brick which extends GameObject)
-        allObjects.add(paddle);
-        for (Brick brick : bricks) {
-            if (!brick.isDestroyed()) allObjects.add(brick);
-        }
-        allObjects.addAll(buffs);
         if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.EnlargedPaddle_Ball)) {
             paddle.setWidth(200);
             paddle.enlarge();
         } else {
             paddle.setWidth(100);
             paddle.minimize();
-        }
+        }    
         // Update paddle (it clamps itself inside update)
-        paddle.update(deltaTime, allObjects);
-        for (Iterator<GameObject> it = buffs.iterator(); it.hasNext(); ) {
+        paddle.update(deltaTime, new ArrayList<>());
+        for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
             // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
             if (obj instanceof Buff pup) {
-                pup.update(deltaTime, allObjects);
+                pup.update(deltaTime, new ArrayList<>());
 
                 // If collected by paddle
                 if (paddle.intersects(pup)) {
@@ -237,7 +237,7 @@ public class GameEngine {
             }
         }
 
-        // Update ball using swept-AABB movement against allObjects
+            // Update ball using swept-AABB movement against allObjects
         // Update all balls
         for (Iterator<Ball> it = balls.iterator(); it.hasNext(); ) {
             Ball ball = it.next();
@@ -249,6 +249,11 @@ public class GameEngine {
                 ball.setVelX(0.0);
                 ball.setVelY(0.0);
                 continue;
+            }
+            ArrayList<GameObject> allObjects = new ArrayList<>();
+            allObjects.add(paddle);
+            for (Brick brick : bricks) {
+                if (!brick.isDestroyed()) allObjects.add(brick);
             }
 
             // Ball in-flight
@@ -263,34 +268,32 @@ public class GameEngine {
 
             // Paddle collision
             if (ball.intersects(paddle)) {
-                handlePaddleCollision(ball);
+                handlePaddleCollisionArkanoid(ball, paddle);
             }
 
             // Brick discrete collision fallback
-            for (Brick brick : bricks) {
-                if (brick.isDestroyed()) continue;
-                if (ball.intersects(brick)) {
-                    processBrickHit(brick);
-                    ball.setVelY(-ball.getVelY());
-                    break;
+            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                for (Brick brick : bricks) {
+                    if (brick.isDestroyed()) continue;
+
+                    if (ball.intersects(brick)) {
+                        processBrickHit(brick);
+                    }
+                }
+            } else {
+                for (Brick brick : bricks) {
+                    if (brick.isDestroyed()) continue;
+                    if (ball.intersects(brick)) {
+                        processBrickHit(brick);
+                        ball.setVelY(-ball.getVelY());
+                        break;
+                    }
                 }
             }
 
             // Check if ball fell below screen
             if (ball.checkWallCollision()) {
-                if (ball.intersects(paddle)) {
-                    // Last-chance catch
-                    if (ball.getVelY() > EPS) {
-                        ball.setVelY(-Math.abs(ball.getVelY()));
-                        ball.setPosY(paddle.getPosY() - ball.getHeight() - PUSH_OUT);
-                    } else {
-                        ball.setPosY(paddle.getPosY() - ball.getHeight());
-                        ball.setVelX(paddle.getVelX());
-                        ball.setVelY(0.0);
-                    }
-                } else {
-                    it.remove();
-                }
+                it.remove():
             }
         }
 
@@ -325,33 +328,46 @@ public class GameEngine {
         }
     }
 
-    public void handlePaddleCollision(Ball ball) {
-        double overlapX = Math.max(0.0, Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())
-                - Math.max(ball.getPosX(), paddle.getPosX()));
-        double overlapY = Math.max(0.0, Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())
-                - Math.max(ball.getPosY(), paddle.getPosY()));
+ private void handlePaddleCollisionArkanoid(Ball ball, Paddle paddle) {
 
-        if (overlapX > EPS && overlapX + EPS < overlapY) {
-            // Side collision
+        double overlapX = Math.max(0.0,
+                Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())
+                        - Math.max(ball.getPosX(), paddle.getPosX()));
+        double overlapY = Math.max(0.0,
+                Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())
+                        - Math.max(ball.getPosY(), paddle.getPosY()));
+
+
+
+        if (overlapX < overlapY && overlapX < 8) {
+
             ball.setVelX(-ball.getVelX());
-            ball.setPosX((ball.centerX() < paddle.centerX())
-                    ? paddle.getPosX() - ball.getWidth() - LARGE_PUSH
-                    : paddle.getPosX() + paddle.getWidth() + LARGE_PUSH);
-        } else {
-            // Top collision
-            if (ball.getVelY() > EPS) {
-                double hitPos = Math.max(-1.0, Math.min(1.0,
-                        (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5)));
-                double newDirX = (Math.abs(hitPos) < 0.1) ? Math.copySign(0.1, hitPos == 0 ? 1.0 : hitPos) : hitPos;
-                ball.setVelX(ball.getSpeed() * newDirX);
-                ball.setVelY(-Math.abs(ball.getVelY()));
-                ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
+            ball.setVelY(-Math.abs(ball.getVelY()));
+            if (ball.centerX() < paddle.centerX()) {
+                ball.setPosX(paddle.getPosX() - ball.getWidth() - LARGE_PUSH);
             } else {
-                ball.setPosY(paddle.getPosY() - ball.getHeight());
-                ball.setVelX(paddle.getVelX());
-                ball.setVelY(0.0);
+                ball.setPosX(paddle.getPosX() + paddle.getWidth() + LARGE_PUSH);
             }
+
+            ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
+            return;
         }
+
+
+        double hitPos = (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5);
+        hitPos = Math.max(-1.0, Math.min(1.0, hitPos));
+
+
+        double angleDegrees = 90.0 - (hitPos * 60.0);
+        double angleRadians = Math.toRadians(angleDegrees);
+
+        double speed = ball.getSpeed();
+        double newVelX = speed * Math.cos(angleRadians);
+        double newVelY = -speed * Math.sin(angleRadians);
+
+
+        ball.setVelocity(newVelX, newVelY);
+        ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
     }
 
     public void applyBuff(Buff.BuffType type) {
@@ -365,7 +381,7 @@ public class GameEngine {
                 }
             }
         } else if (type == Buff.BuffType.Heart_Ball) {
-            lives++;
+            lives ++;
         } else {
             balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
@@ -379,8 +395,8 @@ public class GameEngine {
         double a1 = angle + Math.toRadians(25);
         double a2 = angle - Math.toRadians(25);
 
-        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a1), speed * Math.sin(a1));
-        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a2), speed * Math.sin(a2));
+        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a1), speed*Math.sin(a1));
+        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a2), speed*Math.sin(a2));
 
         balls.add(b1);
         if (balls.size() < Max_Ball) balls.add(b2);
@@ -390,7 +406,7 @@ public class GameEngine {
         balls.clear();
         int ballSize = 15;
         int ballX = (int) (paddle.getPosX() + (paddle.getWidth() / 2));
-        int ballY = (int) (paddle.getPosY() - paddle.getHeight());
+        int ballY =(int)  (paddle.getPosY() - paddle.getHeight());
         Ball newball = new Ball(ballX, ballY, ballSize, ballSize, 300.0, -1.0, -1.0, screenWidth, screenHeight);
         newball.setLaunched(false);
         balls.add(newball);
@@ -409,18 +425,5 @@ public class GameEngine {
 
     public void togglePaused() {
         paused = !paused;
-    }
-
-    public void nextLevel() {
-        currentLevel++;
-        String nextLevelPath = LevelLoader.getLevelName(currentLevel);
-        if (!XMLHandler.exists(nextLevelPath)) {
-            gameWon = true;
-            System.out.println("All levels completed!");
-            return;
-        }
-
-        createBricks();
-        resetBall();
     }
 }

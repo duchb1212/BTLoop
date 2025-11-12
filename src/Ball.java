@@ -150,7 +150,12 @@ public class Ball extends MovableObject {
             for (GameObject other : allObjects) {
                 if (other instanceof Ball) continue;
                 if (other instanceof Buff) continue;
-                if (other instanceof Brick && ((Brick)other).isDestroyed()) continue;
+                if (other instanceof Brick) {
+                    if (((Brick)other).isDestroyed()) continue;
+                    if (this.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                        continue;
+                    }
+                } 
 
                 CollisionResult currentCollision = CollisionUtils.sweptAABB(this, other, moveX, moveY);
                 if (currentCollision != null && currentCollision.t < bestCollision.t) {
@@ -262,5 +267,17 @@ public class Ball extends MovableObject {
         double s = this.getSpeed();
         this.setVelX(s * dirX);
         this.setVelY(s * dirY);
-        this.isLaunched = true;    }
+        this.isLaunched = true;    
+    }
+
+    public void setVelocity(double velX, double velY) {
+        this.velX = velX;
+        this.velY = velY;
+        double len = Math.sqrt(velX * velX + velY * velY);
+        if (len > 1e-6) {
+            this.dirX = velX / len;
+            this.dirY = velY / len;
+            this.speed = len;
+        }
+    }
 }
