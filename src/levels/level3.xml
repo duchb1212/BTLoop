@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Level name="Level 3 - Fortress">
-    <Row>UUUUUUUUUU</Row>
-    <Row>U........U</Row>
-    <Row>U.SSSSSS.U</Row>
-    <Row>U.SNNNNS.U</Row>
-    <Row>U.SNIIIS.U</Row>
-    <Row>U.SNNNNS.U</Row>
-    <Row>U.SSSSSS.U</Row>
-    <Row>UUUUUUUUUU</Row>
+<Level name="Level 3">
+    <Row>USUSUUSUSU</Row>
+    <Row>SSSSSSSSSS</Row>
+    <Row>IIIIIIIIII</Row>
+    <Row>NNNNNNNNNN</Row>
+    <Row>USUSUUSUSU</Row>
+    <Row>SSSSSSSSSS</Row>
+    <Row>IIIIIIIIII</Row>
+    <Row>NNNNNNNNNN</Row>
 </Level>
