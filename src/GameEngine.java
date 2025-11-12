@@ -34,8 +34,8 @@ public class GameEngine {
     private int screenWidth;
     private int screenHeight;
 
-    private LevelLoader levelLoader = new LevelLoader(brickWidth, brickHeight, brickPadding, offSetX, offSetY, screenWidth, screenHeight);
-    private int currentLevel = 1;
+    private LevelLoader levelLoader = new LevelLoader(brickWidth,brickHeight,brickPadding,offSetX,offSetY,screenWidth,screenHeight);
+    private int currentLevel =1;
 
     private static final int initialLives = 3;
     private static final int pointNormalBricks = 10;
@@ -208,7 +208,7 @@ public class GameEngine {
         }
         // Update paddle (it clamps itself inside update)
         paddle.update(deltaTime, new ArrayList<>());
-        for (Iterator<GameObject> it = buffs.iterator(); it.hasNext(); ) {
+        for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
             // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
             if (obj instanceof Buff pup) {
@@ -342,6 +342,7 @@ public class GameEngine {
                         - Math.max(ball.getPosY(), paddle.getPosY()));
 
 
+
         if (overlapX < overlapY && overlapX < 8) {
 
             ball.setVelX(-ball.getVelX());
@@ -384,7 +385,7 @@ public class GameEngine {
                 }
             }
         } else if (type == Buff.BuffType.Heart_Ball) {
-            lives++;
+            lives ++;
         } else {
             balls.forEach(ball -> ball.getBuffs().put(type, 5.0));
         }
@@ -398,8 +399,8 @@ public class GameEngine {
         double a1 = angle + Math.toRadians(25);
         double a2 = angle - Math.toRadians(25);
 
-        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a1), speed * Math.sin(a1));
-        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed * Math.cos(a2), speed * Math.sin(a2));
+        Ball b1 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a1), speed*Math.sin(a1));
+        Ball b2 = origin.cloneAt(origin.getPosX(), origin.getPosY(), speed*Math.cos(a2), speed*Math.sin(a2));
 
         balls.add(b1);
         if (balls.size() < Max_Ball) balls.add(b2);
@@ -409,7 +410,7 @@ public class GameEngine {
         balls.clear();
         int ballSize = 15;
         int ballX = (int) (paddle.getPosX() + (paddle.getWidth() / 2));
-        int ballY = (int) (paddle.getPosY() - paddle.getHeight());
+        int ballY =(int)  (paddle.getPosY() - paddle.getHeight());
         Ball newball = new Ball(ballX, ballY, ballSize, ballSize, 300.0, -1.0, -1.0, screenWidth, screenHeight);
         newball.setLaunched(false);
         balls.add(newball);
@@ -429,7 +430,6 @@ public class GameEngine {
     public void togglePaused() {
         paused = !paused;
     }
-
     public void nextLevel() {
         currentLevel++;
         String nextLevelPath = LevelLoader.getLevelName(currentLevel);
@@ -440,5 +440,12 @@ public class GameEngine {
         }
         createBricks();
         resetBall();
+    }
+    public int getCurrentLevel() {
+        return currentLevel;
+    }
+
+    public void setCurrentLevel(int lvl) {
+        this.currentLevel = lvl;
     }
 }
