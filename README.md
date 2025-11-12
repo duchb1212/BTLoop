@@ -18,3 +18,27 @@ This is a classic Arkanoid game developed in Java as a final project for Object-
 3. Applies Factory method.
 4. Includes sound effects, animations, and power-up systems.
 5. Supports save/load game functionality.
+
+### Screenshots
+**Main Menu**  
+![Main Menu](doc/Main_menu.png)
+
+**Ingame**
+![Ingame](doc/Ingame.png)
+
+**PauseMenu**
+![Pause Menu](doc/PauseMenu.png)
+
+### Controls
+| Key | Action |
+|-----|--------|
+| `←` or `A` | Move paddle left |
+| `→` or `D` | Move paddle right |
+| `SPACE` | Launch ball |
+|  `ESC` | Pause game |
+
+## Installation
+
+1. Clone the project from the repository.
+2. Open the project in the IDE.
+3. Run the project.
