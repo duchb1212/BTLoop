@@ -158,7 +158,10 @@ public class Ball extends MovableObject {
                 if (other instanceof Paddle) continue;
                 if (other instanceof Brick) {
                     if (!((Brick) other).isDestroyed()) continue;
-                    if (this.buffs.containsKey(Buff.BuffType.Fire_Ball)) continue;
+                    if (brick instanceof IceBrick) {
+                    } else if (this.getBuffs().containsKey(Buff.BuffType.Fire_Ball) {
+                        continue;
+                    }
                 }
 
                 CollisionResult currentCollision = CollisionUtils.sweptAABB(this, other, moveX, moveY);
