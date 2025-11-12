@@ -2,10 +2,10 @@
 
 ##Author
 Group "Chộ nào" - Class INT2204_11
-1. Trần Nguyễn Bảo Anh - 24021377
-3. Nguyễn Hoàng Bảo - 24021385
-4. Phạm Quốc An - 24021353
-5. Nguyễn Tài Đức - 24021417
+1. Trần Nguyễn Bảo Anh - 24021377 - 25%
+2. Nguyễn Hoàng Bảo - 24021385 - 25%
+3. Phạm Quốc An - 24021353 - 25%
+4. Nguyễn Tài Đức - 24021417 - 25%
 
 **Instructor**: Kiều Văn Tuyên
 **Semester**: HK1 - 2025
