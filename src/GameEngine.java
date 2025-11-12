@@ -205,16 +205,6 @@ public class GameEngine {
      */
     public void update(double deltaTime) {
         if (gameOver || gameWon || paused) return;
-
-        // Build the list of all objects for collision queries (Ball expects ArrayList<GameObject>)
-        ArrayList<GameObject> allObjects = new ArrayList<>();
-
-        // Add paddle and all bricks (bricks are Brick which extends GameObject)
-        allObjects.add(paddle);
-        for (Brick brick : bricks) {
-            if (!brick.isDestroyed()) allObjects.add(brick);
-        }
-        allObjects.addAll(buffs);
         if (balls.getFirst().getBuffs().containsKey(Buff.BuffType.EnlargedPaddle_Ball)) {
             paddle.setWidth(200);
             paddle.enlarge();
@@ -223,12 +213,12 @@ public class GameEngine {
             paddle.minimize();
         }    
         // Update paddle (it clamps itself inside update)
-        paddle.update(deltaTime, allObjects);
+        paddle.update(deltaTime, new ArrayList<>());
         for (Iterator<GameObject> it =  buffs.iterator(); it.hasNext(); ) {
             GameObject obj = it.next();
             // Assume PowerUpBall extends GameObject and has update, isMarkedForRemoval(), getPowerUpType()
             if (obj instanceof Buff pup) {
-                pup.update(deltaTime, allObjects);
+                pup.update(deltaTime, new ArrayList<>());
 
                 // If collected by paddle
                 if (paddle.intersects(pup)) {
@@ -260,6 +250,11 @@ public class GameEngine {
                 ball.setVelY(0.0);
                 continue;
             }
+            ArrayList<GameObject> allObjects = new ArrayList<>();
+            allObjects.add(paddle);
+            for (Brick brick : bricks) {
+                if (!brick.isDestroyed()) allObjects.add(brick);
+            }
 
             // Ball in-flight
             ball.update(deltaTime, allObjects);
@@ -273,34 +268,32 @@ public class GameEngine {
 
             // Paddle collision
             if (ball.intersects(paddle)) {
-                handlePaddleCollision(ball);
+                handlePaddleCollisionArkanoid(ball, paddle);
             }
 
             // Brick discrete collision fallback
-            for (Brick brick : bricks) {
-                if (brick.isDestroyed()) continue;
-                if (ball.intersects(brick)) {
-                    processBrickHit(brick);
-                    ball.setVelY(-ball.getVelY());
-                    break;
+            if (ball.getPowerUps().containsKey(PowerUpBall.PowerUpType.Fire_Ball)) {
+                for (Brick brick : bricks) {
+                    if (brick.isDestroyed()) continue;
+
+                    if (ball.intersects(brick)) {
+                        processBrickHit(brick);
+                    }
+                }
+            } else {
+                for (Brick brick : bricks) {
+                    if (brick.isDestroyed()) continue;
+                    if (ball.intersects(brick)) {
+                        processBrickHit(brick);
+                        ball.setVelY(-ball.getVelY());
+                        break;
+                    }
                 }
             }
 
             // Check if ball fell below screen
             if (ball.checkWallCollision()) {
-                if (ball.intersects(paddle)) {
-                    // Last-chance catch
-                    if (ball.getVelY() > EPS) {
-                        ball.setVelY(-Math.abs(ball.getVelY()));
-                        ball.setPosY(paddle.getPosY() - ball.getHeight() - PUSH_OUT);
-                    } else {
-                        ball.setPosY(paddle.getPosY() - ball.getHeight());
-                        ball.setVelX(paddle.getVelX());
-                        ball.setVelY(0.0);
-                    }
-                } else {
-                    it.remove();
-                }
+                it.remove():
             }
         }
 
@@ -335,33 +328,46 @@ public class GameEngine {
         }
     }
 
-    public void handlePaddleCollision(Ball ball) {
-        double overlapX = Math.max(0.0, Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())
-                - Math.max(ball.getPosX(), paddle.getPosX()));
-        double overlapY = Math.max(0.0, Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())
-                - Math.max(ball.getPosY(), paddle.getPosY()));
+ private void handlePaddleCollisionArkanoid(Ball ball, Paddle paddle) {
 
-        if (overlapX > EPS && overlapX + EPS < overlapY) {
-            // Side collision
+        double overlapX = Math.max(0.0,
+                Math.min(ball.getPosX() + ball.getWidth(), paddle.getPosX() + paddle.getWidth())
+                        - Math.max(ball.getPosX(), paddle.getPosX()));
+        double overlapY = Math.max(0.0,
+                Math.min(ball.getPosY() + ball.getHeight(), paddle.getPosY() + paddle.getHeight())
+                        - Math.max(ball.getPosY(), paddle.getPosY()));
+
+
+
+        if (overlapX < overlapY && overlapX < 8) {
+
             ball.setVelX(-ball.getVelX());
-            ball.setPosX((ball.centerX() < paddle.centerX())
-                    ? paddle.getPosX() - ball.getWidth() - LARGE_PUSH
-                    : paddle.getPosX() + paddle.getWidth() + LARGE_PUSH);
-        } else {
-            // Top collision
-            if (ball.getVelY() > EPS) {
-                double hitPos = Math.max(-1.0, Math.min(1.0,
-                        (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5)));
-                double newDirX = (Math.abs(hitPos) < 0.1) ? Math.copySign(0.1, hitPos == 0 ? 1.0 : hitPos) : hitPos;
-                ball.setVelX(ball.getSpeed() * newDirX);
-                ball.setVelY(-Math.abs(ball.getVelY()));
-                ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
+            ball.setVelY(-Math.abs(ball.getVelY()));
+            if (ball.centerX() < paddle.centerX()) {
+                ball.setPosX(paddle.getPosX() - ball.getWidth() - LARGE_PUSH);
             } else {
-                ball.setPosY(paddle.getPosY() - ball.getHeight());
-                ball.setVelX(paddle.getVelX());
-                ball.setVelY(0.0);
+                ball.setPosX(paddle.getPosX() + paddle.getWidth() + LARGE_PUSH);
             }
+
+            ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
+            return;
         }
+
+
+        double hitPos = (ball.centerX() - paddle.centerX()) / (paddle.getWidth() * 0.5);
+        hitPos = Math.max(-1.0, Math.min(1.0, hitPos));
+
+
+        double angleDegrees = 90.0 - (hitPos * 60.0);
+        double angleRadians = Math.toRadians(angleDegrees);
+
+        double speed = ball.getSpeed();
+        double newVelX = speed * Math.cos(angleRadians);
+        double newVelY = -speed * Math.sin(angleRadians);
+
+
+        ball.setVelocity(newVelX, newVelY);
+        ball.setPosY(paddle.getPosY() - ball.getHeight() - LARGE_PUSH);
     }
 
     public void applyBuff(Buff.BuffType type) {
