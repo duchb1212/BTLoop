@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Level name="Level 4 - Diamond Pattern">
-    <Row>.....N.....</Row>
-    <Row>....NSN....</Row>
-    <Row>...NSSSI...</Row>
-    <Row>..NSSSSSN..</Row>
-    <Row>.NSSSUUSSN.</Row>
-    <Row>..NSSSSSN..</Row>
-    <Row>...NSSSI...</Row>
-    <Row>....NSN....</Row>
-    <Row>.....N.....</Row>
+<Level name="Level 3 - Fortress">
+    <Row>UUUUUUUUUU</Row>
+    <Row>U........U</Row>
+    <Row>U.SSSSSS.U</Row>
+    <Row>U.SNNNNS.U</Row>
+    <Row>U.SNIIIS.U</Row>
+    <Row>U.SNNNNS.U</Row>
+    <Row>U.SSSSSS.U</Row>
+    <Row>UUUUUUUUUU</Row>
 </Level>
