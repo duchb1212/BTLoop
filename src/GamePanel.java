@@ -1,6 +1,7 @@
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -8,7 +9,8 @@ import java.io.IOException;
 
 /**
  * GamePanel: UI layer, handles input, ticking and rendering.
- * Adjusted to match updated APIs (camelCase method names, updated brick types).
+ * Hiển thị score, lives, high score. Tự động cập nhật highscore khi game kết thúc.
+ * Sửa bổ sung constructor nhận GameEngine, dùng cho chọn level từ menu!
  */
 public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private GameEngine gameEngine;
@@ -20,14 +22,17 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     private boolean pressedLeft = false;
     private boolean pressedRight = false;
-    private GameEngine engine;
+    // private GameEngine engine; // Không còn cần dùng biến này, vì dùng gameEngine mới truyền vào.
+
+    // --- Biến điều khiển hiển thị HighScore ---
+    private boolean showHighScore = false;
 
     public GameEngine getEngine() {
         return gameEngine;
     }
 
-
-    public GamePanel(int width, int height) {
+    /** Constructor dùng cho tiếp tục game hoặc chọn level. */
+    public GamePanel(GameEngine engine, int width, int height) {
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.BLACK);
         setFocusable(true);
@@ -41,9 +46,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             System.err.println("Không thể load background texture!");
         }
 
-        gameEngine = new GameEngine(width, height);
+        this.gameEngine = engine; // dùng engine đã truyền vào (có thể set level, tiếp tục...)
         renderer = new Renderer();
-
 
         // Pause Overlay
         pauseOverlay = new PauseOverLay(this, gameEngine);
@@ -56,7 +60,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         timer.start();
 
         SoundManager.playBackgroundMusic("src/sounds/Music.wav");
+    }
 
+    /** Constructor mặc định cho New Game: dùng level mặc định */
+    public GamePanel(int width, int height) {
+        this(new GameEngine(width, height), width, height);
+    }
+
+    // --- Setter cho hiển thị HighScore ---
+    public void setShowHighScore(boolean value) {
+        this.showHighScore = value;
     }
 
     public void togglePause() {
@@ -101,7 +114,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             );
         }
 
-        // Render ball
+        // Render balls
         for (var ball : gameEngine.getBalls()) {
             if (ball.getTexture() != null) {
                 g2d.drawImage(
@@ -131,6 +144,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
         }
 
+        // Render buffs/powerballs
         for (var powerball : gameEngine.getBuffs()) {
             if (powerball instanceof Buff buff) {
                 Image tex = buff.getBuffType().getTexture();
@@ -148,12 +162,22 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         renderUI(g);
     }
 
+    // --- Sửa UI: thêm HighScore ở góc trên bên phải ---
     private void renderUI(Graphics g) {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 16));
 
         g.drawString("Score: " + gameEngine.getScore(), 10, 20);
         g.drawString("Lives: " + gameEngine.getLives(), 10, 40);
+
+        // Vẽ HighScore góc phải cùng font, màu
+        if (showHighScore) {
+            int highScore = HighScoreManager.getHighScore();
+            String highScoreStr = "High Score: " + highScore;
+            int strWidth = g.getFontMetrics().stringWidth(highScoreStr);
+            int x = getWidth() - strWidth - 18;
+            g.drawString(highScoreStr, x, 20);
+        }
 
         int lineHeight = 50;
         if (gameEngine.isGameOver()) {
@@ -165,6 +189,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             String restartGame = "Press R to restart";
             int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
             g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
+
+            // --- Update high score nếu cần ---
+            HighScoreManager.checkAndSetHighScore(gameEngine.getScore());
         } else if (gameEngine.isGameWon()) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
             String gameWon = "Game Won";
@@ -174,13 +201,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             String restartGame = "Press R to restart";
             int textWidth2 = g.getFontMetrics().stringWidth(restartGame);
             g.drawString(restartGame, (getWidth() - textWidth2) / 2, getHeight() / 2 + lineHeight);
+
+            HighScoreManager.checkAndSetHighScore(gameEngine.getScore());
         }
     }
 
+    /** Dùng cho continue hoặc các trường hợp cần đồng bộ instance engine */
     public void setEngine(GameEngine engine) {
-        this.engine = engine;
+        this.gameEngine = engine;
     }
-
 
     @Override
     public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -191,7 +220,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         } else {
             gameEngine.getPaddle().stop();
         }
-        // Pass deltaTime as a fixed timestep (1/60s) to engine update for consistency.
         gameEngine.update(1.0 / 60.0);
         repaint();
     }
@@ -201,14 +229,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         int key = e.getKeyCode();
         if (key == KeyEvent.VK_SPACE) {
             if (!gameEngine.getBalls().get(0).isLaunched()) {
-                // initial launch direction: slightly to the right and upward
                 gameEngine.getBalls().get(0).launch(0.2, -1.0);
             }
         }
         if (key == KeyEvent.VK_ESCAPE) {
             togglePause();
         }
-
         if (key == KeyEvent.VK_LEFT) {
             pressedLeft = true;
         }
@@ -241,7 +267,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
         // Save to slot 1-9 - Ctrl+1 through Ctrl+9
         else if (e.isControlDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
-            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            int slot = key - KeyEvent.VK_0;
             if (SaveManager.saveToSlot(slot, gameEngine)) {
                 System.out.println("✓ Saved to slot " + slot);
             } else {
@@ -250,7 +276,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
         // Load from slot 1-9 - Alt+1 through Alt+9
         else if (e.isAltDown() && key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
-            int slot = key - KeyEvent.VK_0; // Convert key to number 1-9
+            int slot = key - KeyEvent.VK_0;
             if (SaveManager.loadFromSlot(slot, gameEngine, getWidth(), getHeight())) {
                 System.out.println("✓ Loaded from slot " + slot);
             } else {
@@ -271,9 +297,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-    }
+    public void keyTyped(KeyEvent e) {}
 
-    public void setPauseOverlay(Object o) {
-    }
+    public void setPauseOverlay(Object o) {}
 }
