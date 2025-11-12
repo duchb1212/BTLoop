@@ -158,8 +158,8 @@ public class Ball extends MovableObject {
                 if (other instanceof Paddle) continue;
                 if (other instanceof Brick) {
                     if (!((Brick) other).isDestroyed()) continue;
-                    if (brick instanceof IceBrick) {
-                    } else if (this.getBuffs().containsKey(Buff.BuffType.Fire_Ball) {
+                    if (other instanceof IceBrick) {
+                    } else if (this.getBuffs().containsKey(Buff.BuffType.Fire_Ball)) {
                         continue;
                     }
                 }
